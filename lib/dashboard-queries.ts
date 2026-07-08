@@ -4,6 +4,7 @@ import type {
   DashboardOrder,
   OrderStatus,
   PaymentStatus,
+  PaymentMode,
   Category,
   MenuItem,
   RestaurantTable,
