@@ -55,9 +55,10 @@ export default function InvoiceDocument({
 
   const isCounter = order.order_type === 'counter';
 
-  const statusStyle =
-    order.payment_status === 'paid' ? styles.paid : order.payment_status === 'refunded' ? styles.refunded : styles.unpaid;
-
+  git add .
+git commit -m "Fix payment status type"
+git push
+  
   return (
     <Document>
       <Page size="A5" style={styles.page}>
