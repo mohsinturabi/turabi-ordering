@@ -33,7 +33,12 @@ export default async function MenuPage({
   return (
     <RequireMobile tenantSlug={tenantSlug} redirectQuery={tokenQuery}>
       <BrandHeader tenant={tenant} />
-      <MenuBrowser categories={categories} items={items} cartHref={cartHref} />
+      <MenuBrowser
+  tenantId={tenant.id}
+  categories={categories}
+  items={items}
+  cartHref={cartHref}
+/>
     </RequireMobile>
   );
 }
