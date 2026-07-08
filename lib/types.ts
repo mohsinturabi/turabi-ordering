@@ -38,7 +38,7 @@ export interface MenuItem {
 }
 
 export type PaymentMethod = 'counter' | 'online';
-export type PaymentStatus = 'paid' | 'unpaid';
+export type PaymentStatus = 'paid' | 'unpaid' | 'refunded';
 export type PaymentMode = 'cash' | 'upi';
 
 export type OrderStatus =
