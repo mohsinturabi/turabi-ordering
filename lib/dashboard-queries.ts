@@ -147,7 +147,7 @@ export async function createMenuItem(input: {
 
 export async function updateMenuItem(
   id: string,
-  fields: Partial<Pick<MenuItem, 'name' | 'description' | 'price' | 'is_available'>>
+  fields: Partial<Pick<MenuItem, 'name' | 'description' | 'price' | 'is_available' | 'image_url'>>
 ) {
   const { error } = await supabase.from('menu_items').update(fields).eq('id', id);
   return { error: error?.message ?? null };
