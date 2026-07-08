@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { getOrdersForTenant } from '@/lib/dashboard-queries';
 import { updateOrderStatus } from '@/lib/dashboard-queries';
-import type { DashboardOrder, OrderStatus } from '@/lib/types';
+import type { DashboardOrder, OrderStatus, PaymentStatus, PaymentMode } from '@/lib/types';
 import OrderCard from './OrderCard';
 
 export default function OrderHistory({ tenantId }: { tenantId: string }) {
@@ -17,7 +17,7 @@ export default function OrderHistory({ tenantId }: { tenantId: string }) {
   async function handleUpdateStatus(
     orderId: string,
     status: OrderStatus,
-    extra?: Partial<{ payment_status: 'paid' | 'unpaid' }>
+    extra?: Partial<{ payment_status: PaymentStatus; payment_mode: PaymentMode }>
   ) {
     setOrders((prev) =>
       prev.map((o) => (o.id === orderId ? { ...o, status, ...(extra ?? {}) } : o))
