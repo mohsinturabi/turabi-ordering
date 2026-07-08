@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Visible keyboard focus everywhere — buttons, links, inputs */
+:focus-visible {
+  outline: 2px solid theme('colors.accent');
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Kitchen-ticket perforation, used as a divider between order sections */
+.ticket-edge {
+  background-image: radial-gradient(circle, theme('colors.paper') 2.5px, transparent 2.6px);
+  background-size: 14px 14px;
+  background-position: center;
+  height: 6px;
+}
