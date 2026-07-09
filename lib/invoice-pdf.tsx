@@ -118,6 +118,20 @@ export default function InvoiceDocument({
     ? 'Paid — UPI'
     : 'Pay at counter'}
 </Text>
+            const statusStyle = (() => {
+  const status = (order?.payment_status || '').toLowerCase();
+  switch (status) {
+    case 'paid':
+      return styles.statusPaid ?? { backgroundColor: '#4CAF50' };
+    case 'pending':
+      return styles.statusPending ?? { backgroundColor: '#FFC107' };
+    case 'unpaid':
+    case 'failed':
+      return styles.statusUnpaid ?? { backgroundColor: '#F44336' };
+    default:
+      return styles.statusDefault ?? {};
+  }
+})();
             <Text style={[styles.badge, statusStyle, { marginTop: 4 }]}>
               {order.payment_status.toUpperCase()}
             </Text>
