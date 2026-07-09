@@ -108,36 +108,41 @@ export default function InvoiceDocument({
         </View>
 
         <View style={styles.footer}>
-          <View>
-           <Text style={styles.label}>
-  {order.payment_method === 'online'
-    ? 'Paid online'
-    : order.payment_mode === 'cash'
-    ? 'Paid — Cash'
-    : order.payment_mode === 'upi'
-    ? 'Paid — UPI'
-    : 'Pay at counter'}
-</Text>
-            const statusStyle = (() => {
-  const status = (order?.payment_status || '').toLowerCase();
-  switch (status) {
-    case 'paid':
-      return styles.statusPaid ?? { backgroundColor: '#4CAF50' };
-    case 'pending':
-      return styles.statusPending ?? { backgroundColor: '#FFC107' };
-    case 'unpaid':
-    case 'failed':
-      return styles.statusUnpaid ?? { backgroundColor: '#F44336' };
-    default:
-      return styles.statusDefault ?? {};
-  }
-})();
-            <Text style={[styles.badge, statusStyle, { marginTop: 4 }]}>
-              {order.payment_status.toUpperCase()}
-            </Text>
-          </View>
-          <Image src={qrDataUrl} style={styles.qr} />
-        </View>
+  <View>
+    <Text style={styles.label}>
+      {order.payment_method === 'online'
+        ? 'Paid online'
+        : order.payment_mode === 'cash'
+        ? 'Paid — Cash'
+        : order.payment_mode === 'upi'
+        ? 'Paid — UPI'
+        : 'Pay at counter'}
+    </Text>
+    <Text
+      style={[
+        styles.badge,
+        (() => {
+          const status = (order?.payment_status || '').toLowerCase();
+          switch (status) {
+            case 'paid':
+              return styles.statusPaid ?? { backgroundColor: '#4CAF50' };
+            case 'pending':
+              return styles.statusPending ?? { backgroundColor: '#FFC107' };
+            case 'unpaid':
+            case 'failed':
+              return styles.statusUnpaid ?? { backgroundColor: '#F44336' };
+            default:
+              return styles.statusDefault ?? {};
+          }
+        })(),
+        { marginTop: 4 },
+      ]}
+    >
+      {order.payment_status.toUpperCase()}
+    </Text>
+  </View>
+  <Image src={qrDataUrl} style={styles.qr} />
+</View>
       </Page>
     </Document>
   );
