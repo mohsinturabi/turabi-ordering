@@ -54,10 +54,6 @@ export default function InvoiceDocument({
   const timeStr = dateObj.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 
   const isCounter = order.order_type === 'counter';
-
-  git add .
-git commit -m "Fix payment status type"
-git push
   
   return (
     <Document>
