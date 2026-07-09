@@ -37,6 +37,10 @@ const styles = StyleSheet.create({
   paid: { backgroundColor: '#E4EEE7', color: '#3F7D57' },
   unpaid: { backgroundColor: '#F2E4D8', color: '#C1440E' },
   refunded: { backgroundColor: '#EEE', color: '#666' },
+  statusPaid: { backgroundColor: '#E4EEE7', color: '#3F7D57' },
+  statusPending: { backgroundColor: '#FFF4D9', color: '#B8860B' },
+  statusUnpaid: { backgroundColor: '#F2E4D8', color: '#C1440E' },
+  statusDefault: { backgroundColor: '#EEE', color: '#666' },
 });
 
 export default function InvoiceDocument({
@@ -54,7 +58,22 @@ export default function InvoiceDocument({
   const timeStr = dateObj.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 
   const isCounter = order.order_type === 'counter';
-  
+
+  const getStatusStyle = () => {
+    const status = (order?.payment_status || '').toLowerCase();
+    switch (status) {
+      case 'paid':
+        return styles.statusPaid;
+      case 'pending':
+        return styles.statusPending;
+      case 'unpaid':
+      case 'failed':
+        return styles.statusUnpaid;
+      default:
+        return styles.statusDefault;
+    }
+  };
+
   return (
     <Document>
       <Page size="A5" style={styles.page}>
@@ -108,41 +127,22 @@ export default function InvoiceDocument({
         </View>
 
         <View style={styles.footer}>
-  <View>
-    <Text style={styles.label}>
-      {order.payment_method === 'online'
-        ? 'Paid online'
-        : order.payment_mode === 'cash'
-        ? 'Paid — Cash'
-        : order.payment_mode === 'upi'
-        ? 'Paid — UPI'
-        : 'Pay at counter'}
-    </Text>
-    <Text
-      style={[
-        styles.badge,
-        (() => {
-          const status = (order?.payment_status || '').toLowerCase();
-          switch (status) {
-            case 'paid':
-              return styles.statusPaid ?? { backgroundColor: '#4CAF50' };
-            case 'pending':
-              return styles.statusPending ?? { backgroundColor: '#FFC107' };
-            case 'unpaid':
-            case 'failed':
-              return styles.statusUnpaid ?? { backgroundColor: '#F44336' };
-            default:
-              return styles.statusDefault ?? {};
-          }
-        })(),
-        { marginTop: 4 },
-      ]}
-    >
-      {order.payment_status.toUpperCase()}
-    </Text>
-  </View>
-  <Image src={qrDataUrl} style={styles.qr} />
-</View>
+          <View>
+            <Text style={styles.label}>
+              {order.payment_method === 'online'
+                ? 'Paid online'
+                : order.payment_mode === 'cash'
+                ? 'Paid — Cash'
+                : order.payment_mode === 'upi'
+                ? 'Paid — UPI'
+                : 'Pay at counter'}
+            </Text>
+            <Text style={[styles.badge, getStatusStyle(), { marginTop: 4 }]}>
+              {order.payment_status.toUpperCase()}
+            </Text>
+          </View>
+          <Image src={qrDataUrl} style={styles.qr} />
+        </View>
       </Page>
     </Document>
   );
