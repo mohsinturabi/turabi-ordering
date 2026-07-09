@@ -40,6 +40,17 @@ export async function POST(req: Request) {
       );
     }
 
+    // Turant success response bhej do — email background mein hoga
+    sendInviteInBackground(restaurant);
+
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+async function sendInviteInBackground(restaurant: any) {
+  try {
     const { data: inviteData, error: inviteError } =
       await supabaseAdmin.auth.admin.inviteUserByEmail(restaurant.contact_email, {
         data: { restaurant_id: restaurant.id, role: "owner" },
@@ -47,12 +58,8 @@ export async function POST(req: Request) {
       });
 
     if (inviteError) {
-      // eslint-disable-next-line no-console
       console.error("inviteUserByEmail failed:", inviteError.message);
-      return NextResponse.json({
-        success: true,
-        warning: `Restaurant activated, but invite email failed: ${inviteError.message}`,
-      });
+      return;
     }
 
     if (inviteData?.user) {
@@ -64,13 +71,10 @@ export async function POST(req: Request) {
         is_primary_owner: true,
       });
       if (staffErr) {
-        // eslint-disable-next-line no-console
         console.error("staff row creation failed:", staffErr.message);
       }
     }
-
-    return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    console.error("background invite failed:", err);
   }
 }
