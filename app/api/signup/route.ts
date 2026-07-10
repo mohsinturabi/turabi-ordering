@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+لبimport { NextResponse } from "next/server";
 import Razorpay from "razorpay";
 import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "crypto";
@@ -155,11 +155,17 @@ export async function POST(req: Request) {
         });
 
       if (inviteError) {
-        // eslint-disable-next-line no-console
-        console.error("inviteUserByEmail failed:", inviteError.message);
-      } else if (inviteData?.user) {
-        // Owner ko turant staff table mein link karo, taaki sign-in hote hi
-        // dashboard access mil jaye
+        console.error('inviteUserByEmail failed:', {
+          message: inviteError.message,
+          status: inviteError.status,
+          name: inviteError.name,
+        });
+      }
+
+      // Owner ko turant staff table mein link karo, taaki sign-in hote hi
+      // dashboard access mil jaye. Sirf tab karo jab invite se user mil gaya ho —
+      // warna inviteData null hoga aur yahan crash ho jayega.
+      if (inviteData?.user?.id) {
         const { error: staffErr } = await supabaseAdmin.from("staff").insert({
           tenant_id: restaurant.id,
           auth_user_id: inviteData.user.id,
@@ -167,13 +173,19 @@ export async function POST(req: Request) {
           role: "owner",
           is_primary_owner: true,
         });
+
         if (staffErr) {
-          // eslint-disable-next-line no-console
           console.error("staff row creation failed:", staffErr.message);
         }
+      } else {
+        console.error("Skipping staff row creation: invite did not return a user.");
       }
 
-      return NextResponse.json({ couponApplied: true, restaurantId: restaurant.id });
+      return NextResponse.json({
+        couponApplied: true,
+        restaurantId: restaurant.id,
+        ...(inviteError && { warning: "Restaurant created, but invite email failed. Use resend invite." }),
+      });
     }
 
     // ---- Payment path: create Razorpay order ----
@@ -201,6 +213,7 @@ export async function POST(req: Request) {
       restaurantId: restaurant.id,
     });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error("Unexpected error in /api/signup:", err);
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
   }
 }
