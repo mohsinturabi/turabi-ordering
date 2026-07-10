@@ -1,4 +1,4 @@
-لبimport { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import Razorpay from "razorpay";
 import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "crypto";
