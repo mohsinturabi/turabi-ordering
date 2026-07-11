@@ -58,7 +58,7 @@ export default function TablesManager({
 
   return (
     <div className="flex flex-col gap-8 max-w-4xl">
-      <form onSubmit={handleAddTable} className="flex gap-3">
+      <form onSubmit={handleAddTable} className="flex flex-col sm:flex-row gap-3">
         <input
           value={newTableNumber}
           onChange={(e) => setNewTableNumber(e.target.value)}
@@ -67,7 +67,7 @@ export default function TablesManager({
         />
         <button
           type="submit"
-          className="bg-ink text-paper rounded-chit px-5 py-2.5 font-semibold"
+          className="whitespace-nowrap bg-ink text-paper rounded-chit px-5 py-2.5 font-semibold"
         >
           Add table
         </button>
@@ -79,7 +79,7 @@ export default function TablesManager({
             key={table.id}
             className="border-2 border-line rounded-chit p-5 flex flex-col items-center gap-3"
           >
-            <p className="font-display text-2xl text-ink">Table {table.table_number}</p>
+            <p className="font-display text-xl sm:text-2xl text-ink">Table {table.table_number}</p>
 
             {/* relative wrapper lets us float the logo exactly in the center */}
             <div className="relative bg-white p-3 rounded-chit border border-line">
@@ -103,14 +103,14 @@ export default function TablesManager({
               <button
                 type="button"
                 onClick={() => handleCopy(table)}
-                className="flex-1 border-2 border-line rounded-chit py-2 text-sm font-semibold text-ink"
+                className="flex-1 whitespace-nowrap border-2 border-line rounded-chit py-2 text-sm font-semibold text-ink"
               >
                 {copiedId === table.id ? 'Copied!' : 'Copy link'}
               </button>
               <button
                 type="button"
                 onClick={() => handleDeleteTable(table.id)}
-                className="px-4 border-2 border-accent text-accent rounded-chit py-2 text-sm font-semibold"
+                className="px-4 whitespace-nowrap border-2 border-accent text-accent rounded-chit py-2 text-sm font-semibold"
               >
                 Delete
               </button>
