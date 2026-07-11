@@ -73,21 +73,21 @@ export default function MenuEditor() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="flex items-center justify-between gap-4 px-6 py-4 bg-white border-b-2 border-line">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-6 py-4 bg-white border-b-2 border-line">
         <div>
-          <p className="font-display text-2xl text-ink">Menu</p>
+          <p className="font-display text-xl sm:text-2xl text-ink">Menu</p>
           <p className="text-sm text-muted">Add items, edit prices, mark things sold out.</p>
         </div>
         <Link
           href="/dashboard"
-          className="px-4 py-2.5 rounded-full border-2 border-line text-ink font-semibold text-sm"
+          className="self-start sm:self-auto whitespace-nowrap px-4 py-2.5 rounded-full border-2 border-line text-ink font-semibold text-sm"
         >
           ← Back to orders
         </Link>
       </header>
 
-      <main className="flex-1 px-6 py-6 flex flex-col gap-8 max-w-2xl">
-        <form onSubmit={handleAddCategory} className="flex gap-3">
+      <main className="flex-1 px-4 sm:px-6 py-6 flex flex-col gap-8 max-w-2xl">
+        <form onSubmit={handleAddCategory} className="flex flex-col sm:flex-row gap-3">
           <input
             value={newCategoryName}
             onChange={(e) => setNewCategoryName(e.target.value)}
@@ -96,7 +96,7 @@ export default function MenuEditor() {
           />
           <button
             type="submit"
-            className="bg-ink text-paper rounded-chit px-5 py-3 font-semibold"
+            className="whitespace-nowrap bg-ink text-paper rounded-chit px-5 py-3 font-semibold"
           >
             Add category
           </button>
@@ -106,6 +106,222 @@ export default function MenuEditor() {
           <p className="text-muted">No categories yet — add one above to get started.</p>
         )}
 
+        {categories.map((cat) => (
+          <div key={cat.id} className="flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-3 border-b-2 border-line pb-2">
+              <h2 className="font-display text-lg sm:text-xl text-ink truncate">{cat.name}</h2>
+              <button
+                type="button"
+                onClick={() => handleDeleteCategory(cat.id)}
+                className="whitespace-nowrap text-sm text-accent font-medium"
+              >
+                Delete category
+              </button>
+            </div>
+
+            {items
+              .filter((i) => i.category_id === cat.id)
+              .map((item) => (
+                <MenuItemRow
+                  key={item.id}
+                  item={item}
+                  onToggle={() => handleToggleAvailability(item)}
+                  onDelete={() => handleDeleteItem(item.id)}
+                  onSaved={refresh}
+                />
+              ))}
+
+            {addingItemFor === cat.id ? (
+              <NewItemForm
+                tenantId={staff!.tenant_id}
+                categoryId={cat.id}
+                onDone={() => {
+                  setAddingItemFor(null);
+                  refresh();
+                }}
+                onCancel={() => setAddingItemFor(null)}
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setAddingItemFor(cat.id)}
+                className="self-start text-sm font-medium text-accent border border-accent rounded-full px-4 py-2"
+              >
+                + Add item to {cat.name}
+              </button>
+            )}
+          </div>
+        ))}
+      </main>
+    </div>
+  );
+}
+
+function MenuItemRow({
+  item,
+  onToggle,
+  onDelete,
+  onSaved,
+}: {
+  item: MenuItem;
+  onToggle: () => void;
+  onDelete: () => void;
+  onSaved: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(item.name);
+  const [price, setPrice] = useState(String(item.price));
+  const [description, setDescription] = useState(item.description ?? '');
+
+  async function handleSave() {
+    await updateMenuItem(item.id, {
+      name: name.trim(),
+      price: parseFloat(price) || 0,
+      description: description.trim() || null,
+    });
+    setEditing(false);
+    onSaved();
+  }
+
+  if (editing) {
+    return (
+      <div className="border-2 border-accent rounded-chit p-4 flex flex-col gap-3">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="border border-line rounded-chit px-3 py-2"
+          placeholder="Name"
+        />
+        <input
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="border border-line rounded-chit px-3 py-2"
+          placeholder="Description"
+        />
+        <input
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          type="number"
+          className="border border-line rounded-chit px-3 py-2"
+          placeholder="Price"
+        />
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={handleSave}
+            className="bg-ink text-paper rounded-chit px-4 py-2 font-semibold text-sm"
+          >
+            Save
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditing(false)}
+            className="border border-line rounded-chit px-4 py-2 text-sm"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-line rounded-chit p-4 ${
+        !item.is_available ? 'opacity-50' : ''
+      }`}
+    >
+      <div className="min-w-0">
+        <p className="font-medium text-ink break-words">{item.name}</p>
+        {item.description && <p className="text-sm text-muted break-words">{item.description}</p>}
+        <p className="font-mono text-sm text-ink mt-1">{formatPrice(item.price)}</p>
+      </div>
+      <div className="flex flex-wrap items-center gap-3 shrink-0">
+        <label className="flex items-center gap-2 text-sm whitespace-nowrap">
+          <input type="checkbox" checked={item.is_available} onChange={onToggle} />
+          In stock
+        </label>
+        <button type="button" onClick={() => setEditing(true)} className="text-sm text-accent font-medium whitespace-nowrap">
+          Edit
+        </button>
+        <button type="button" onClick={onDelete} className="text-sm text-muted whitespace-nowrap">
+          Delete
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function NewItemForm({
+  tenantId,
+  categoryId,
+  onDone,
+  onCancel,
+}: {
+  tenantId: string;
+  categoryId: string;
+  onDone: () => void;
+  onCancel: () => void;
+}) {
+  const [name, setName] = useState('');
+  const [price, setPrice] = useState('');
+  const [description, setDescription] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || !price) return;
+    await createMenuItem({
+      tenantId,
+      categoryId,
+      name: name.trim(),
+      description,
+      price: parseFloat(price) || 0,
+      imageUrl,
+    });
+    onDone();
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="border-2 border-accent rounded-chit p-4 flex flex-col gap-3">
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Item name"
+        className="border border-line rounded-chit px-3 py-2"
+        required
+      />
+      <input
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        placeholder="Description (optional)"
+        className="border border-line rounded-chit px-3 py-2"
+      />
+      <input
+        value={price}
+        onChange={(e) => setPrice(e.target.value)}
+        type="number"
+        placeholder="Price"
+        className="border border-line rounded-chit px-3 py-2"
+        required
+      />
+      <input
+        value={imageUrl}
+        onChange={(e) => setImageUrl(e.target.value)}
+        placeholder="Image URL (optional)"
+        className="border border-line rounded-chit px-3 py-2"
+      />
+      <div className="flex flex-wrap gap-2">
+        <button type="submit" className="bg-ink text-paper rounded-chit px-4 py-2 font-semibold text-sm">
+          Add item
+        </button>
+        <button type="button" onClick={onCancel} className="border border-line rounded-chit px-4 py-2 text-sm">
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
         {categories.map((cat) => (
           <div key={cat.id} className="flex flex-col gap-3">
             <div className="flex items-center justify-between border-b-2 border-line pb-2">
