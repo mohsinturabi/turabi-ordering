@@ -106,11 +106,11 @@ export default function NewOrderModal({ tenantId, onClose, onCreated }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-chit w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 flex flex-col gap-5">
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-2xl text-ink">New Order</h2>
-          <button onClick={onClose} className="text-muted text-sm">Close</button>
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-3 sm:p-4">
+      <div className="bg-white rounded-chit w-full max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 flex flex-col gap-5">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-display text-xl sm:text-2xl text-ink">New Order</h2>
+          <button onClick={onClose} className="text-muted text-sm whitespace-nowrap">Close</button>
         </div>
 
         {/* Table / Counter selection */}
@@ -119,7 +119,7 @@ export default function NewOrderModal({ tenantId, onClose, onCreated }: Props) {
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setTarget({ type: 'counter' })}
-              className={`px-4 py-2 rounded-chit border-2 text-sm font-semibold ${
+              className={`whitespace-nowrap px-4 py-2 rounded-chit border-2 text-sm font-semibold ${
                 target?.type === 'counter' ? 'border-ink bg-ink text-paper' : 'border-line text-ink'
               }`}
             >
@@ -130,7 +130,7 @@ export default function NewOrderModal({ tenantId, onClose, onCreated }: Props) {
                 key={t.id}
                 disabled={t.isBooked}
                 onClick={() => setTarget({ type: 'table', tableId: t.id })}
-                className={`px-4 py-2 rounded-chit border-2 text-sm font-semibold ${
+                className={`whitespace-nowrap px-4 py-2 rounded-chit border-2 text-sm font-semibold ${
                   t.isBooked
                     ? 'border-line text-muted opacity-50 cursor-not-allowed'
                     : target?.type === 'table' && target.tableId === t.id
@@ -145,7 +145,7 @@ export default function NewOrderModal({ tenantId, onClose, onCreated }: Props) {
         </div>
 
         {/* Customer info (optional) */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <input
             placeholder="Customer name (optional)"
             value={customerName}
@@ -170,12 +170,12 @@ export default function NewOrderModal({ tenantId, onClose, onCreated }: Props) {
                 <p className="font-medium text-ink mb-2">{cat.name}</p>
                 <div className="flex flex-col gap-2">
                   {catItems.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between border border-line rounded-chit px-3 py-2">
-                      <div>
-                        <p className="text-sm text-ink">{item.name}</p>
+                    <div key={item.id} className="flex items-center justify-between gap-3 border border-line rounded-chit px-3 py-2">
+                      <div className="min-w-0">
+                        <p className="text-sm text-ink truncate">{item.name}</p>
                         <p className="text-xs text-muted">₹{item.price.toFixed(2)}</p>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 shrink-0">
                         <button onClick={() => changeQty(item.id, -1)} className="w-7 h-7 border border-line rounded-full">−</button>
                         <span className="w-5 text-center">{cart[item.id] ?? 0}</span>
                         <button onClick={() => changeQty(item.id, 1)} className="w-7 h-7 border border-line rounded-full">+</button>
@@ -190,12 +190,12 @@ export default function NewOrderModal({ tenantId, onClose, onCreated }: Props) {
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <div className="flex items-center justify-between border-t border-line pt-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-line pt-4">
           <p className="font-semibold text-lg">Total: ₹{total.toFixed(2)}</p>
           <button
             onClick={handleSubmit}
             disabled={submitting}
-            className="bg-ink text-paper rounded-chit px-6 py-3 font-semibold disabled:opacity-50"
+            className="whitespace-nowrap bg-ink text-paper rounded-chit px-6 py-3 font-semibold disabled:opacity-50"
           >
             {submitting ? 'Placing…' : 'Place Order'}
           </button>
