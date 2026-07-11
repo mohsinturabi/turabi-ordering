@@ -79,35 +79,35 @@ export default function DashboardView() {
     setSoundEnabled(true);
   }
 
- async function handleUpdateStatus(
-  orderId: string,
-  status: OrderStatus,
-  extra?: Partial<{ payment_status: PaymentStatus }>
-) {
-  setOrders((prev) =>
-    prev.map((o) => (o.id === orderId ? { ...o, status, ...(extra ?? {}) } : o))
-  );
+  async function handleUpdateStatus(
+    orderId: string,
+    status: OrderStatus,
+    extra?: Partial<{ payment_status: PaymentStatus }>
+  ) {
+    setOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, status, ...(extra ?? {}) } : o))
+    );
 
-  const { error } = await updateOrderStatus(orderId, status, extra);
+    const { error } = await updateOrderStatus(orderId, status, extra);
 
-  if (error) {
-    // eslint-disable-next-line no-console
-    console.error('Failed to update order status', error);
-    if (staff) {
-      const fresh = await getOrdersForTenant(staff.tenant_id);
-      setOrders(fresh);
+    if (error) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to update order status', error);
+      if (staff) {
+        const fresh = await getOrdersForTenant(staff.tenant_id);
+        setOrders(fresh);
+      }
+      return;
     }
-    return;
-  }
 
-  if (status === 'Completed' || extra?.payment_status === 'paid') {
-    fetch('/api/invoices/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orderId }),
-    }).catch((err) => console.error('invoice generation failed', err)); // eslint-disable-line no-console
+    if (status === 'Completed' || extra?.payment_status === 'paid') {
+      fetch('/api/invoices/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+      }).catch((err) => console.error('invoice generation failed', err)); // eslint-disable-line no-console
+    }
   }
-}
 
   const activeOrders = orders.filter((o) => o.status !== 'Completed' && o.status !== 'Cancelled');
   const visibleOrders = orders.filter((o) => {
@@ -120,85 +120,86 @@ export default function DashboardView() {
     counts[o.status] = (counts[o.status] ?? 0) + 1;
   }
 
+  const trialDaysLeft =
+    tenant?.subscription_status === 'active' && tenant.trial_ends_at
+      ? Math.ceil((new Date(tenant.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+      : null;
+  const showTrialBanner = trialDaysLeft !== null && trialDaysLeft <= 3;
+
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="flex items-center justify-between gap-4 px-6 py-4 bg-white border-b-2 border-line">
+      <header className="flex flex-col gap-3 px-4 sm:px-6 py-4 bg-white border-b-2 border-line lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p className="font-display text-2xl text-ink">{tenant?.name ?? 'Counter'}</p>
+          <p className="font-display text-xl sm:text-2xl text-ink">{tenant?.name ?? 'Counter'}</p>
           <p className="text-sm text-muted">
             {staff?.name} · {staff?.role}
           </p>
         </div>
-{tenant && tenant.subscription_status !== 'active' && (
-  <div className="px-6 py-3 bg-red-600 text-white text-center font-semibold">
-    Aapka subscription suspend ho chuka hai — orders accept nahi ho rahe. Renew karne ke liye platform owner se contact karo.
-  </div>
-)}
-{tenant && tenant.subscription_status === 'active' && tenant.trial_ends_at && (
-  (() => {
-    const daysLeft = Math.ceil(
-      (new Date(tenant.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-    );
-    if (daysLeft > 3) return null;
-    return (
-      <div className="px-6 py-3 bg-accent text-white text-center font-semibold">
-        Aapka trial {daysLeft <= 0 ? 'aaj khatam ho raha hai' : `${daysLeft} din mein khatam ho raha hai`} — renew karna na bhoolein.
-      </div>
-    );
-  })()
-)}
-       <div className="flex items-center gap-3">
-  <button
-    type="button"
-    onClick={() => setShowNewOrder(true)}
-    className="px-4 py-2.5 rounded-full bg-ink text-paper font-semibold text-sm"
-  >
-    + New Order
-  </button>
 
-  {!soundEnabled && (
-    <button
-      type="button"
-      onClick={handleEnableSound}
-      className="px-4 py-2.5 rounded-full border-2 border-accent text-accent font-semibold text-sm"
-    >
-      🔔 Enable sound
-    </button>
-  )}
-         
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <button
+            type="button"
+            onClick={() => setShowNewOrder(true)}
+            className="px-4 py-2.5 rounded-full bg-ink text-paper font-semibold text-sm whitespace-nowrap"
+          >
+            + New Order
+          </button>
+
+          {!soundEnabled && (
+            <button
+              type="button"
+              onClick={handleEnableSound}
+              className="px-4 py-2.5 rounded-full border-2 border-accent text-accent font-semibold text-sm whitespace-nowrap"
+            >
+              🔔 Enable sound
+            </button>
+          )}
+
           <Link
             href="/dashboard/menu"
-            className="px-4 py-2.5 rounded-full border-2 border-line text-ink font-semibold text-sm"
+            className="px-4 py-2.5 rounded-full border-2 border-line text-ink font-semibold text-sm whitespace-nowrap"
           >
             Menu
           </Link>
           <Link
             href="/dashboard/history"
-            className="px-4 py-2.5 rounded-full border-2 border-line text-ink font-semibold text-sm"
+            className="px-4 py-2.5 rounded-full border-2 border-line text-ink font-semibold text-sm whitespace-nowrap"
           >
             History
           </Link>
           <button
             type="button"
             onClick={signOut}
-            className="px-4 py-2.5 rounded-full border-2 border-line text-ink font-semibold text-sm"
+            className="px-4 py-2.5 rounded-full border-2 border-line text-ink font-semibold text-sm whitespace-nowrap"
           >
             Sign out
           </button>
         </div>
       </header>
 
+      {tenant && tenant.subscription_status !== 'active' && (
+        <div className="px-4 sm:px-6 py-3 bg-red-600 text-white text-center font-semibold text-sm sm:text-base">
+          Aapka subscription suspend ho chuka hai — orders accept nahi ho rahe. Renew karne ke liye platform owner se contact karo.
+        </div>
+      )}
+
+      {showTrialBanner && (
+        <div className="px-4 sm:px-6 py-3 bg-accent text-white text-center font-semibold text-sm sm:text-base">
+          Aapka trial {trialDaysLeft! <= 0 ? 'aaj khatam ho raha hai' : `${trialDaysLeft} din mein khatam ho raha hai`} — renew karna na bhoolein.
+        </div>
+      )}
+
       {justArrived && (
-        <div className="bg-accent text-paper text-center py-2.5 font-semibold text-lg animate-pulse">
+        <div className="bg-accent text-paper text-center py-2.5 font-semibold text-base sm:text-lg animate-pulse">
           New order received
         </div>
       )}
 
-      <div className="px-6 py-4">
+      <div className="px-4 sm:px-6 py-4 overflow-x-auto">
         <StatusFilterTabs active={filter} counts={counts} onChange={setFilter} />
       </div>
 
-      <main className="flex-1 px-6 pb-10">
+      <main className="flex-1 px-4 sm:px-6 pb-10">
         {visibleOrders.length === 0 ? (
           <p className="text-muted text-lg text-center py-16">No orders here right now.</p>
         ) : (
