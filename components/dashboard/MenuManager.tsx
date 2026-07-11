@@ -81,7 +81,7 @@ export default function MenuManager({ tenantId }: { tenantId: string }) {
     refresh();
   }
 
-async function handleImageChange(item: MenuItem, e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleImageChange(item: MenuItem, e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     const { url } = await uploadMenuItemImage(item.id, file);
@@ -92,7 +92,7 @@ async function handleImageChange(item: MenuItem, e: React.ChangeEvent<HTMLInputE
 
   return (
     <div className="flex flex-col gap-8 max-w-2xl">
-      <form onSubmit={handleAddCategory} className="flex gap-3">
+      <form onSubmit={handleAddCategory} className="flex flex-col sm:flex-row gap-3">
         <input
           value={newCategoryName}
           onChange={(e) => setNewCategoryName(e.target.value)}
@@ -101,7 +101,7 @@ async function handleImageChange(item: MenuItem, e: React.ChangeEvent<HTMLInputE
         />
         <button
           type="submit"
-          className="bg-ink text-paper rounded-chit px-5 py-2.5 font-semibold"
+          className="whitespace-nowrap bg-ink text-paper rounded-chit px-5 py-2.5 font-semibold"
         >
           Add category
         </button>
@@ -112,13 +112,13 @@ async function handleImageChange(item: MenuItem, e: React.ChangeEvent<HTMLInputE
         const draft = newItemDrafts[cat.id] ?? { name: '', price: '' };
 
         return (
-          <div key={cat.id} className="border-2 border-line rounded-chit p-5 flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-xl text-ink">{cat.name}</h2>
+          <div key={cat.id} className="border-2 border-line rounded-chit p-4 sm:p-5 flex flex-col gap-4">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="font-display text-lg sm:text-xl text-ink truncate">{cat.name}</h2>
               <button
                 type="button"
                 onClick={() => handleDeleteCategory(cat.id)}
-                className="text-sm text-accent font-semibold"
+                className="whitespace-nowrap text-sm text-accent font-semibold"
               >
                 Delete category
               </button>
@@ -126,10 +126,9 @@ async function handleImageChange(item: MenuItem, e: React.ChangeEvent<HTMLInputE
 
             <div className="flex flex-col gap-3">
               {catItems.map((item) => (
-               
-                 <div
+                <div
                   key={item.id}
-                  className="flex items-center gap-3 border-t border-line pt-3"
+                  className="flex flex-wrap sm:flex-nowrap items-center gap-3 border-t border-line pt-3"
                 >
                   <div className="flex flex-col items-center gap-1 shrink-0">
                     {item.image_url ? (
@@ -153,10 +152,11 @@ async function handleImageChange(item: MenuItem, e: React.ChangeEvent<HTMLInputE
                       />
                     </label>
                   </div>
+
                   <input
                     defaultValue={item.name}
                     onBlur={(e) => updateMenuItem(item.id, { name: e.target.value })}
-                    className="flex-1 border border-line rounded-chit px-3 py-2"
+                    className="flex-1 min-w-[140px] border border-line rounded-chit px-3 py-2"
                   />
                   <input
                     type="number"
@@ -164,28 +164,31 @@ async function handleImageChange(item: MenuItem, e: React.ChangeEvent<HTMLInputE
                     onBlur={(e) => handlePriceChange(item, e.target.value)}
                     className="w-24 border border-line rounded-chit px-3 py-2 font-mono"
                   />
-                  <label className="flex items-center gap-1.5 text-sm text-muted">
-                    <input
-                      type="checkbox"
-                      checked={item.is_available}
-                      onChange={() => handleToggleAvailable(item)}
-                    />
-                    Available
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteItem(item.id)}
-                    className="text-accent text-sm font-semibold"
-                  >
-                    Delete
-                  </button>
+
+                  <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start pt-2 sm:pt-0 border-t sm:border-t-0 border-line/60">
+                    <label className="flex items-center gap-1.5 text-sm text-muted whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={item.is_available}
+                        onChange={() => handleToggleAvailable(item)}
+                      />
+                      Available
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteItem(item.id)}
+                      className="text-accent text-sm font-semibold whitespace-nowrap"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
 
             <form
               onSubmit={(e) => handleAddItem(cat.id, e)}
-              className="flex gap-2 border-t border-line pt-3"
+              className="flex flex-col sm:flex-row gap-2 border-t border-line pt-3"
             >
               <input
                 value={draft.name}
@@ -198,25 +201,28 @@ async function handleImageChange(item: MenuItem, e: React.ChangeEvent<HTMLInputE
                 placeholder="Item name"
                 className="flex-1 border border-line rounded-chit px-3 py-2"
               />
-              <input
-                value={draft.price}
-                onChange={(e) =>
-                  setNewItemDrafts((prev) => ({
-                    ...prev,
-                    [cat.id]: { ...draft, price: e.target.value },
-                  }))
-                }
-                placeholder="Price"
-                type="number"
-                className="w-24 border border-line rounded-chit px-3 py-2 font-mono"
-              />
-              <button type="submit" className="bg-ink text-paper rounded-chit px-4 py-2 font-semibold">
-                Add
-              </button>
+              <div className="flex gap-2">
+                <input
+                  value={draft.price}
+                  onChange={(e) =>
+                    setNewItemDrafts((prev) => ({
+                      ...prev,
+                      [cat.id]: { ...draft, price: e.target.value },
+                    }))
+                  }
+                  placeholder="Price"
+                  type="number"
+                  className="w-24 border border-line rounded-chit px-3 py-2 font-mono"
+                />
+                <button type="submit" className="whitespace-nowrap bg-ink text-paper rounded-chit px-4 py-2 font-semibold">
+                  Add
+                </button>
+              </div>
             </form>
           </div>
         );
       })}
     </div>
   );
+}
 }
