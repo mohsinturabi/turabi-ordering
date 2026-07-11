@@ -225,4 +225,3 @@ export default function MenuManager({ tenantId }: { tenantId: string }) {
     </div>
   );
 }
-}
