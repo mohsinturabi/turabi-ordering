@@ -12,6 +12,7 @@ import {
   updateMenuItem,
   toggleMenuItemAvailability,
   deleteMenuItem,
+  uploadMenuItemImage,
 } from '@/lib/dashboard-queries';
 import type { Category, MenuItem } from '@/lib/types';
 import { formatPrice } from '@/lib/format';
@@ -266,19 +267,32 @@ function NewItemForm({
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  function handleImagePick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim() || !price) return;
-    await createMenuItem({
+    setSubmitting(true);
+    const { item, error } = await createMenuItem({
       tenantId,
       categoryId,
       name: name.trim(),
       description,
       price: parseFloat(price) || 0,
-      imageUrl,
     });
+    if (!error && item && imageFile) {
+      await uploadMenuItemImage(item.id, imageFile);
+    }
+    setSubmitting(false);
     onDone();
   }
 
@@ -305,15 +319,26 @@ function NewItemForm({
         className="border border-line rounded-chit px-3 py-2"
         required
       />
-      <input
-        value={imageUrl}
-        onChange={(e) => setImageUrl(e.target.value)}
-        placeholder="Image URL (optional)"
-        className="border border-line rounded-chit px-3 py-2"
-      />
+      <div className="flex items-center gap-3">
+        {imagePreview ? (
+          <img
+            src={imagePreview}
+            alt="Preview"
+            className="w-14 h-14 object-cover rounded-chit border border-line"
+          />
+        ) : (
+          <div className="w-14 h-14 rounded-chit border border-dashed border-line flex items-center justify-center text-xs text-muted">
+            No image
+          </div>
+        )}
+        <label className="text-sm text-accent font-semibold cursor-pointer border border-accent rounded-chit px-3 py-2">
+          {imageFile ? 'Change image' : 'Add image'}
+          <input type="file" accept="image/*" className="hidden" onChange={handleImagePick} />
+        </label>
+      </div>
       <div className="flex flex-wrap gap-2">
-        <button type="submit" className="bg-ink text-paper rounded-chit px-4 py-2 font-semibold text-sm">
-          Add item
+        <button type="submit" disabled={submitting} className="bg-ink text-paper rounded-chit px-4 py-2 font-semibold text-sm disabled:opacity-50">
+          {submitting ? 'Adding…' : 'Add item'}
         </button>
         <button type="button" onClick={onCancel} className="border border-line rounded-chit px-4 py-2 text-sm">
           Cancel
