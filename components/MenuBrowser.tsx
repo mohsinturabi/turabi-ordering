@@ -6,6 +6,8 @@ import type { Category, MenuItem } from '@/lib/types';
 import MenuItemCard from './MenuItemCard';
 import CartBar from './CartBar';
 
+const ALL_MENU_ID = 'all';
+
 export default function MenuBrowser({
   categories,
   items: initialItems,
@@ -18,7 +20,7 @@ export default function MenuBrowser({
   tenantId: string;
 }) {
   const [items, setItems] = useState<MenuItem[]>(initialItems);
-  const [activeCategory, setActiveCategory] = useState(categories[0]?.id ?? '');
+  const [activeCategory, setActiveCategory] = useState<string>(ALL_MENU_ID);
 
   // Realtime: reflects availability toggles, price edits, and new/removed
   // items from the owner's dashboard instantly, without a page refresh.
@@ -52,6 +54,19 @@ export default function MenuBrowser({
   return (
     <div className="flex-1 flex flex-col pb-24">
       <div className="flex gap-2 overflow-x-auto px-5 py-4 border-b border-line">
+        <button
+          type="button"
+          onClick={() => setActiveCategory(ALL_MENU_ID)}
+          className={[
+            'shrink-0 px-4 py-2 rounded-full text-sm font-medium border transition-colors',
+            activeCategory === ALL_MENU_ID
+              ? 'bg-ink text-paper border-ink'
+              : 'bg-transparent text-ink border-line',
+          ].join(' ')}
+        >
+          All Menu
+        </button>
+
         {categories.map((cat) => (
           <button
             key={cat.id}
@@ -70,7 +85,23 @@ export default function MenuBrowser({
       </div>
 
       <div className="px-5">
-        {itemsForCategory.length === 0 ? (
+        {activeCategory === ALL_MENU_ID ? (
+          categories.map((cat) => {
+            const catItems = items.filter((i) => i.category_id === cat.id);
+            if (catItems.length === 0) return null;
+
+            return (
+              <div key={cat.id} className="mb-6">
+                <h2 className="text-sm font-semibold text-ink uppercase tracking-wide pt-4 pb-1">
+                  {cat.name}
+                </h2>
+                {catItems.map((item) => (
+                  <MenuItemCard key={item.id} item={item} />
+                ))}
+              </div>
+            );
+          })
+        ) : itemsForCategory.length === 0 ? (
           <p className="text-sm text-muted py-8 text-center">Nothing in this category yet.</p>
         ) : (
           itemsForCategory.map((item) => <MenuItemCard key={item.id} item={item} />)
