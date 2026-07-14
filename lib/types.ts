@@ -35,6 +35,9 @@ export interface MenuItem {
   price: number;
   image_url: string | null;
   is_available: boolean;
+  rating?: number | null;
+  rating_count?: number | null;
+  is_bestseller?: boolean;
 }
 
 export type PaymentMethod = 'counter' | 'online';
