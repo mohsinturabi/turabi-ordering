@@ -14,7 +14,7 @@ const razorpay = new Razorpay({
 });
 
 const PLAN_AMOUNTS: Record<string, number> = {
-  basic: 1500,
+  basic: 199,
   assisted: 299,
 };
 
