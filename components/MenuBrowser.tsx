@@ -1,12 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Category, MenuItem } from '@/lib/types';
 import MenuItemCard from './MenuItemCard';
 import CartBar from './CartBar';
-
-const ALL_MENU_ID = 'all';
 
 export default function MenuBrowser({
   categories,
@@ -20,10 +18,11 @@ export default function MenuBrowser({
   tenantId: string;
 }) {
   const [items, setItems] = useState<MenuItem[]>(initialItems);
-  const [activeCategory, setActiveCategory] = useState<string>(ALL_MENU_ID);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [sheetOpen, setSheetOpen] = useState(false);
 
-  // Realtime: reflects availability toggles, price edits, and new/removed
-  // items from the owner's dashboard instantly, without a page refresh.
+  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
   useEffect(() => {
     const channel = supabase
       .channel(`menu-items-${tenantId}`)
@@ -49,64 +48,113 @@ export default function MenuBrowser({
     };
   }, [tenantId]);
 
-  const itemsForCategory = items.filter((i) => i.category_id === activeCategory);
+  const categoryCount = (catId: string) =>
+    items.filter((i) => i.category_id === catId).length;
+
+  function jumpToCategory(catId: string) {
+    setCollapsed((prev) => ({ ...prev, [catId]: false }));
+    setSheetOpen(false);
+
+    requestAnimationFrame(() => {
+      sectionRefs.current[catId]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
 
   return (
-    <div className="flex-1 flex flex-col pb-24">
-      <div className="flex gap-2 overflow-x-auto px-5 py-4 border-b border-line">
-        <button
-          type="button"
-          onClick={() => setActiveCategory(ALL_MENU_ID)}
-          className={[
-            'shrink-0 px-4 py-2 rounded-full text-sm font-medium border transition-colors',
-            activeCategory === ALL_MENU_ID
-              ? 'bg-ink text-paper border-ink'
-              : 'bg-transparent text-ink border-line',
-          ].join(' ')}
-        >
-          All Menu
-        </button>
+    <div className="flex-1 flex flex-col pb-24 relative px-5">
+      {categories.map((cat) => {
+        const catItems = items.filter((i) => i.category_id === cat.id);
+        if (catItems.length === 0) return null;
+        const isCollapsed = collapsed[cat.id];
 
-        {categories.map((cat) => (
-          <button
+        return (
+          <div
             key={cat.id}
-            type="button"
-            onClick={() => setActiveCategory(cat.id)}
-            className={[
-              'shrink-0 px-4 py-2 rounded-full text-sm font-medium border transition-colors',
-              activeCategory === cat.id
-                ? 'bg-ink text-paper border-ink'
-                : 'bg-transparent text-ink border-line',
-            ].join(' ')}
+            ref={(el) => {
+              sectionRefs.current[cat.id] = el;
+            }}
+            className="border-b border-line scroll-mt-20"
           >
-            {cat.name}
-          </button>
-        ))}
-      </div>
+            <button
+              type="button"
+              onClick={() =>
+                setCollapsed((prev) => ({ ...prev, [cat.id]: !prev[cat.id] }))
+              }
+              className="w-full flex items-center justify-between py-4"
+            >
+              <span className="text-base font-semibold text-ink">
+                {cat.name} ({catItems.length})
+              </span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className={[
+                  'w-4 h-4 text-muted transition-transform',
+                  isCollapsed ? '' : 'rotate-180',
+                ].join(' ')}
+              >
+                <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
 
-      <div className="px-5">
-        {activeCategory === ALL_MENU_ID ? (
-          categories.map((cat) => {
-            const catItems = items.filter((i) => i.category_id === cat.id);
-            if (catItems.length === 0) return null;
-
-            return (
-              <div key={cat.id} className="mb-6">
-                <h2 className="text-sm font-semibold text-ink uppercase tracking-wide pt-4 pb-1">
-                  {cat.name}
-                </h2>
+            {!isCollapsed && (
+              <div className="grid grid-cols-2 gap-x-4 gap-y-6 pb-6">
                 {catItems.map((item) => (
                   <MenuItemCard key={item.id} item={item} />
                 ))}
               </div>
-            );
-          })
-        ) : itemsForCategory.length === 0 ? (
-          <p className="text-sm text-muted py-8 text-center">Nothing in this category yet.</p>
-        ) : (
-          itemsForCategory.map((item) => <MenuItemCard key={item.id} item={item} />)
-        )}
-      </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Floating MENU button — quick category jump */}
+      <button
+        type="button"
+        onClick={() => setSheetOpen(true)}
+        className="fixed bottom-24 right-4 z-30 flex flex-col items-center justify-center w-16 h-16 rounded-full bg-ink text-paper shadow-lg active:scale-95"
+        aria-label="Jump to category"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          className="w-5 h-5"
+        >
+          <path d="M6 3h9l3 3v15H6z" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M9 8h6M9 12h6M9 16h4" strokeLinecap="round" />
+        </svg>
+        <span className="text-[10px] font-medium mt-0.5 tracking-wide">MENU</span>
+      </button>
+
+      {sheetOpen && (
+        <div className="fixed inset-0 z-40 flex items-end">
+          <div className="absolute inset-0 bg-ink/50" onClick={() => setSheetOpen(false)} />
+          <div className="relative w-full bg-paper rounded-t-2xl max-h-[70vh] overflow-y-auto pb-6">
+            <div className="w-10 h-1.5 bg-line rounded-full mx-auto mt-3 mb-2" />
+            {categories.map((cat) => {
+              const count = categoryCount(cat.id);
+              if (count === 0) return null;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => jumpToCategory(cat.id)}
+                  className="w-full flex items-center justify-between px-6 py-3.5 text-left border-b border-line last:border-0 active:bg-line/30"
+                >
+                  <span className="text-base text-ink">{cat.name}</span>
+                  <span className="text-sm text-muted">{count}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <CartBar href={cartHref} />
     </div>
