@@ -9,63 +9,52 @@ export default function MenuItemCard({ item }: { item: MenuItem }) {
   const { lines, addItem, updateQuantity } = useCart();
   const line = lines.find((l) => l.menuItemId === item.id);
 
-  if (!item.is_available) {
-    return (
-      <div className="flex gap-4 py-5 opacity-40">
-        <div className="flex-1 min-w-0">
-          <p className="font-medium text-ink">{item.name}</p>
-          {item.description && (
-            <p className="text-sm text-muted mt-1 line-clamp-2">{item.description}</p>
-          )}
-          <p className="text-sm font-mono mt-2 text-muted">Sold out today</p>
-        </div>
-        {item.image_url && (
-          <div className="relative w-28 h-28 shrink-0 rounded-chit overflow-hidden grayscale">
-            <Image src={item.image_url} alt="" fill sizes="112px" className="object-cover" />
-          </div>
-        )}
-      </div>
-    );
-  }
+  const hasDiscount =
+    item.original_price != null && item.original_price > item.price;
 
   return (
-    <div className="flex gap-4 py-5 border-b border-line last:border-0">
-      {/* Left: text content */}
-      <div className="flex-1 min-w-0 pr-1">
-        {item.is_bestseller && (
-          <span className="inline-flex items-center gap-1 text-xs font-semibold text-accent mb-1">
-            ★ Bestseller
-          </span>
-        )}
-
-        <p className="font-medium text-ink leading-snug">{item.name}</p>
-
-        <p className="font-mono text-sm text-ink mt-1">{formatPrice(item.price)}</p>
-
-        {item.rating != null && (
-          <span className="inline-flex items-center gap-1 mt-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 rounded px-1.5 py-0.5">
-            ★ {item.rating.toFixed(1)}
-            {item.rating_count != null && (
-              <span className="text-emerald-700/70">({item.rating_count})</span>
-            )}
-          </span>
-        )}
-
-        {item.description && (
-          <p className="text-sm text-muted mt-2 line-clamp-3">{item.description}</p>
-        )}
-      </div>
-
-      {/* Right: image with floating ADD / stepper */}
-      {item.image_url ? (
-        <div className="relative w-28 h-28 shrink-0">
-          <div className="relative w-28 h-28 rounded-chit overflow-hidden shadow-sm">
-            <Image src={item.image_url} alt="" fill sizes="112px" className="object-cover" />
+    <div className="flex flex-col">
+      {/* Image block */}
+      <div className="relative aspect-square rounded-chit overflow-hidden bg-line/40">
+        {item.image_url ? (
+          <Image
+            src={item.image_url}
+            alt=""
+            fill
+            sizes="(max-width: 640px) 50vw, 220px"
+            className={[
+              'object-cover',
+              !item.is_available ? 'grayscale opacity-60' : '',
+            ].join(' ')}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-muted text-xs">
+            No image
           </div>
+        )}
 
-          <div className="absolute left-1/2 -translate-x-1/2 -bottom-3">
+        {item.is_popular && item.is_available && (
+          <span className="absolute top-2 left-2 bg-paper text-accent text-[11px] font-semibold px-2 py-0.5 rounded-full shadow">
+            Popular
+          </span>
+        )}
+
+        {item.rating != null && item.is_available && (
+          <span className="absolute bottom-2 left-2 flex items-center gap-1 bg-paper text-xs font-semibold text-emerald-700 px-1.5 py-0.5 rounded shadow">
+            ★ {item.rating.toFixed(1)}
+          </span>
+        )}
+
+        {!item.is_available && (
+          <div className="absolute bottom-2 left-2 right-2 bg-paper/95 text-ink text-xs font-medium text-center px-2 py-2 rounded-md shadow">
+            Sold out today
+          </div>
+        )}
+
+        {item.is_available && (
+          <div className="absolute -bottom-3 right-2">
             {line ? (
-              <div className="flex items-center gap-2 bg-paper border border-line rounded-full px-2 py-1 shadow-md">
+              <div className="flex items-center gap-1.5 bg-paper border border-accent rounded-full px-1.5 py-1 shadow-md">
                 <button
                   type="button"
                   aria-label={`Remove one ${item.name}`}
@@ -90,48 +79,54 @@ export default function MenuItemCard({ item }: { item: MenuItem }) {
                 onClick={() =>
                   addItem({ menuItemId: item.id, name: item.name, price: item.price })
                 }
-                className="text-xs font-semibold text-accent bg-paper border border-accent rounded-full px-5 py-1.5 shadow-md active:scale-95"
-              >
-                ADD
-              </button>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="shrink-0 self-start">
-          {line ? (
-            <div className="flex items-center gap-2 border border-line rounded-full px-2 py-1">
-              <button
-                type="button"
-                aria-label={`Remove one ${item.name}`}
-                onClick={() => updateQuantity(item.id, line.quantity - 1)}
-                className="w-6 h-6 flex items-center justify-center text-accent active:scale-95"
-              >
-                −
-              </button>
-              <span className="w-5 text-center font-mono text-sm text-ink">{line.quantity}</span>
-              <button
-                type="button"
-                aria-label={`Add one more ${item.name}`}
-                onClick={() => updateQuantity(item.id, line.quantity + 1)}
-                className="w-6 h-6 flex items-center justify-center text-accent active:scale-95"
+                aria-label={`Add ${item.name}`}
+                className="w-9 h-9 flex items-center justify-center bg-accent text-paper rounded-full shadow-md active:scale-95 text-lg leading-none"
               >
                 +
               </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() =>
-                addItem({ menuItemId: item.id, name: item.name, price: item.price })
-              }
-              className="text-sm font-medium text-accent border border-accent rounded-full px-4 py-1.5 active:scale-95"
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Text block */}
+      <div className="pt-4 pb-1">
+        <div className="flex items-start gap-1.5">
+          {item.is_veg != null && (
+            <span
+              className={[
+                'shrink-0 mt-0.5 w-3.5 h-3.5 border flex items-center justify-center rounded-sm',
+                item.is_veg ? 'border-emerald-600' : 'border-red-600',
+              ].join(' ')}
             >
-              Add
-            </button>
+              <span
+                className={[
+                  'w-1.5 h-1.5',
+                  item.is_veg ? 'bg-emerald-600 rounded-full' : 'bg-red-600',
+                ].join(' ')}
+                style={!item.is_veg ? { clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' } : undefined}
+              />
+            </span>
           )}
+          <p className="text-sm font-medium text-ink leading-snug">{item.name}</p>
         </div>
-      )}
+
+        <div className="flex items-center gap-2 mt-1">
+          {hasDiscount && (
+            <span className="text-xs text-muted line-through font-mono">
+              {formatPrice(item.original_price!)}
+            </span>
+          )}
+          <span
+            className={[
+              'font-mono text-sm',
+              hasDiscount ? 'text-accent font-semibold' : 'text-ink',
+            ].join(' ')}
+          >
+            {formatPrice(item.price)}
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
