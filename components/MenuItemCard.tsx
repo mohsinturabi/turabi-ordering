@@ -15,44 +15,46 @@ export default function MenuItemCard({ item }: { item: MenuItem }) {
   return (
     <div className="flex flex-col">
       {/* Image block */}
-      <div className="relative aspect-square rounded-chit overflow-hidden bg-line/40">
-        {item.image_url ? (
-          <Image
-            src={item.image_url}
-            alt=""
-            fill
-            sizes="(max-width: 640px) 50vw, 220px"
-            className={[
-              'object-cover',
-              !item.is_available ? 'grayscale opacity-60' : '',
-            ].join(' ')}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-muted text-xs">
-            No image
-          </div>
-        )}
+      <div className="relative">
+        <div className="relative aspect-square rounded-chit overflow-hidden bg-line/40">
+          {item.image_url ? (
+            <Image
+              src={item.image_url}
+              alt=""
+              fill
+              sizes="(max-width: 640px) 50vw, 220px"
+              className={[
+                'object-cover',
+                !item.is_available ? 'grayscale opacity-60' : '',
+              ].join(' ')}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-muted text-xs">
+              No image
+            </div>
+          )}
 
-        {item.is_popular && item.is_available && (
-          <span className="absolute top-2 left-2 bg-paper text-accent text-[11px] font-semibold px-2 py-0.5 rounded-full shadow">
-            Popular
-          </span>
-        )}
+          {item.is_popular && item.is_available && (
+            <span className="absolute top-2 left-2 bg-paper text-accent text-[11px] font-semibold px-2 py-0.5 rounded-full shadow">
+              Popular
+            </span>
+          )}
 
-        {item.rating != null && item.is_available && (
-          <span className="absolute bottom-2 left-2 flex items-center gap-1 bg-paper text-xs font-semibold text-emerald-700 px-1.5 py-0.5 rounded shadow">
-            ★ {item.rating.toFixed(1)}
-          </span>
-        )}
+          {item.rating != null && item.is_available && (
+            <span className="absolute bottom-2 left-2 flex items-center gap-1 bg-paper text-xs font-semibold text-emerald-700 px-1.5 py-0.5 rounded shadow">
+              ★ {item.rating.toFixed(1)}
+            </span>
+          )}
 
-        {!item.is_available && (
-          <div className="absolute bottom-2 left-2 right-2 bg-paper/95 text-ink text-xs font-medium text-center px-2 py-2 rounded-md shadow">
-            Sold out today
-          </div>
-        )}
+          {!item.is_available && (
+            <div className="absolute bottom-2 left-2 right-2 bg-paper/95 text-ink text-xs font-medium text-center px-2 py-2 rounded-md shadow">
+              Sold out today
+            </div>
+          )}
+        </div>
 
         {item.is_available && (
-          <div className="absolute -bottom-3 right-2">
+          <div className="absolute -bottom-3 right-2 z-10">
             {line ? (
               <div className="flex items-center gap-1.5 bg-paper border border-accent rounded-full px-1.5 py-1 shadow-md">
                 <button
