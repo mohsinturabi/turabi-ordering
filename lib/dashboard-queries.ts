@@ -29,16 +29,20 @@ export async function getStaffForUser(authUserId: string): Promise<Staff | null>
 export async function getOrdersForTenant(tenantId: string): Promise<DashboardOrder[]> {
   const { data, error } = await supabase
     .from('orders')
-   .select(
-  `
+    .select(
+      `
   id, tenant_id, table_id, order_type, order_code, status, payment_method, payment_status, payment_mode,
   total_amount, created_at,
   tables ( table_number ),
   customers ( mobile_number, name ),
   order_items ( quantity, price_at_order, menu_items ( name ) )
 `
-)
+    )
     .eq('tenant_id', tenantId)
+    // Hide online orders that haven't been paid yet — the customer may
+    // still retry payment or switch to pay-at-counter. Once paid, or if
+    // it's a counter order, it becomes visible immediately.
+    .or('payment_method.eq.counter,payment_status.eq.paid')
     .order('created_at', { ascending: false });
 
   if (error || !data) {
