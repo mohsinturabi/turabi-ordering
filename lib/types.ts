@@ -41,21 +41,6 @@ export interface MenuItem {
   is_veg?: boolean;
 }
 
-// Fetches fresh order state — used to check if a previously-started online
-// order (saved in localStorage) is still valid/unpaid before reusing it,
-// instead of creating a duplicate.
-export async function getOrderById(orderId: string): Promise<Order | null> {
-  const { data, error } = await supabase
-    .from('orders')
-    .select(
-      'id, tenant_id, table_id, order_type, order_code, status, payment_method, payment_status, payment_mode, total_amount, created_at'
-    )
-    .eq('id', orderId)
-    .maybeSingle();
-
-  if (error || !data) return null;
-  return data as Order;
-}
 
 
 export type PaymentMethod = 'counter' | 'online';
