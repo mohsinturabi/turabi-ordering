@@ -1,16 +1,57 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/lib/cart-context';
 import { getMobileNumber, getCustomerName } from '@/lib/storage';
 import { formatPrice } from '@/lib/format';
 import type { Order, PaymentMethod, RestaurantTable, Tenant } from '@/lib/types';
-import { placeOrder, switchOrderToPayAtCounter } from '@/lib/queries';
+import { placeOrder, switchOrderToPayAtCounter, getOrderById } from '@/lib/queries';
 
 declare global {
   interface Window {
     Razorpay: new (options: Record<string, unknown>) => { open: () => void };
+  }
+}
+
+const PENDING_ORDER_MAX_AGE_MS = 30 * 60 * 1000; // 30 minutes
+
+function pendingOrderKey(subdomain: string, tableId: string | null) {
+  return `pending-online-order:${subdomain}:${tableId ?? 'counter'}`;
+}
+
+function savePendingOrder(subdomain: string, tableId: string | null, orderId: string) {
+  try {
+    localStorage.setItem(
+      pendingOrderKey(subdomain, tableId),
+      JSON.stringify({ orderId, savedAt: Date.now() })
+    );
+  } catch {
+    // localStorage unavailable — duplicate-prevention just won't persist
+    // across a reload, which is a soft degrade, not a crash.
+  }
+}
+
+function clearPendingOrder(subdomain: string, tableId: string | null) {
+  try {
+    localStorage.removeItem(pendingOrderKey(subdomain, tableId));
+  } catch {
+    // ignore
+  }
+}
+
+function readPendingOrderId(subdomain: string, tableId: string | null): string | null {
+  try {
+    const raw = localStorage.getItem(pendingOrderKey(subdomain, tableId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { orderId: string; savedAt: number };
+    if (Date.now() - parsed.savedAt > PENDING_ORDER_MAX_AGE_MS) {
+      localStorage.removeItem(pendingOrderKey(subdomain, tableId));
+      return null;
+    }
+    return parsed.orderId;
+  } catch {
+    return null;
   }
 }
 
@@ -29,6 +70,44 @@ export default function CheckoutForm({
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingOrder, setPendingOrder] = useState<Order | null>(null);
+  const [checkingResume, setCheckingResume] = useState(true);
+
+  const tableId = isCounter ? null : table?.id ?? null;
+
+  // On mount: if this customer already started an online payment for this
+  // table/counter that never completed, resume it instead of letting a
+  // fresh "Place order" click create a duplicate.
+  useEffect(() => {
+    let cancelled = false;
+
+    async function resumeIfPending() {
+      const savedOrderId = readPendingOrderId(tenant.subdomain, tableId);
+      if (!savedOrderId) {
+        setCheckingResume(false);
+        return;
+      }
+
+      const existing = await getOrderById(savedOrderId);
+      if (cancelled) return;
+
+      if (!existing || existing.payment_status === 'paid') {
+        // Already paid (or vanished) — nothing to resume.
+        clearPendingOrder(tenant.subdomain, tableId);
+        setCheckingResume(false);
+        return;
+      }
+
+      setPendingOrder(existing);
+      setMethod('online');
+      setCheckingResume(false);
+    }
+
+    resumeIfPending();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handlePlaceOrder() {
     setError(null);
@@ -43,7 +122,7 @@ export default function CheckoutForm({
 
     const { order, error: placeError } = await placeOrder({
       tenantId: tenant.id,
-      tableId: isCounter ? null : table!.id,
+      tableId,
       orderType: isCounter ? 'counter' : 'table',
       mobileNumber: mobile,
       customerName,
@@ -64,6 +143,9 @@ export default function CheckoutForm({
       return;
     }
 
+    // Online: remember this order so a reload/retry reuses it instead of
+    // creating a second one.
+    savePendingOrder(tenant.subdomain, tableId, order.id);
     setPendingOrder(order);
     await openRazorpay(order);
   }
@@ -107,6 +189,7 @@ export default function CheckoutForm({
 
           setPlacing(false);
           if (verifyData.success) {
+            clearPendingOrder(tenant.subdomain, tableId);
             clear();
             router.push(`/order/track/${order.order_code}`);
           } else {
@@ -126,13 +209,22 @@ export default function CheckoutForm({
   }
 
   async function continueAtCounter() {
-  if (!pendingOrder) return;
-  setPlacing(true);
-  await switchOrderToPayAtCounter(pendingOrder.id);
-  setPlacing(false);
-  clear();
-  router.push(`/order/track/${pendingOrder.order_code}`);
-}
+    if (!pendingOrder) return;
+    setPlacing(true);
+    await switchOrderToPayAtCounter(pendingOrder.id);
+    clearPendingOrder(tenant.subdomain, tableId);
+    setPlacing(false);
+    clear();
+    router.push(`/order/track/${pendingOrder.order_code}`);
+  }
+
+  if (checkingResume) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-6">
+        <p className="text-muted">Loading…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col p-5 gap-6">
