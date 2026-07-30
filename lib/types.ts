@@ -82,6 +82,7 @@ export interface Staff {
   name: string;
   role: 'owner' | 'staff';
   auth_user_id: string;
+  is_primary_owner: boolean;
 }
 
 // Order shape used by the Counter Dashboard — includes the joined fields
