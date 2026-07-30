@@ -4,21 +4,32 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 
-const PLANS = {
-  basic: { label: "Basic — ₹199/month", amount: 199 },
-  assisted: { label: "Assisted — ₹299/month", amount: 299 },
+const SETUP_FEE = 399;
+const SUBSCRIPTION_FEE = 599;
+
+const PLAN_INFO = {
+  full: {
+    label: `Full Subscription — ₹${SUBSCRIPTION_FEE}/28 days`,
+    sublabel: `₹${SETUP_FEE} setup fee included · First payment ₹${SETUP_FEE + SUBSCRIPTION_FEE}`,
+    amount: SETUP_FEE + SUBSCRIPTION_FEE,
+  },
+  trial: {
+    label: `Trial — ₹${SETUP_FEE} only`,
+    sublabel: "14 days access · One-time trial, available only once per restaurant",
+    amount: SETUP_FEE,
+  },
 };
 
 export default function SignupPage() {
   const router = useRouter();
   const [form, setForm] = useState({
-  restaurantName: "",
-  subdomain: "",
-  email: "",
-  mobile: "",
-  plan: "basic" as keyof typeof PLANS,
-  couponCode: "",
-});
+    restaurantName: "",
+    subdomain: "",
+    email: "",
+    mobile: "",
+    plan: "full" as keyof typeof PLAN_INFO,
+    couponCode: "",
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -58,8 +69,8 @@ export default function SignupPage() {
         key: keyId,
         amount,
         currency,
-        name: "Restaurant SaaS",
-        description: PLANS[form.plan].label,
+        name: "Turabi Labs",
+        description: PLAN_INFO[form.plan].label,
         order_id: orderId,
         prefill: { email: form.email, contact: form.mobile },
         handler: async function (response: any) {
@@ -109,7 +120,7 @@ export default function SignupPage() {
         src="https://checkout.razorpay.com/v1/checkout.js"
         strategy="lazyOnload"
       />
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-10">
         <form
           onSubmit={handlePay}
           className="w-full max-w-md bg-white rounded-xl shadow p-6 space-y-4"
@@ -176,38 +187,49 @@ export default function SignupPage() {
             />
           </div>
 
-          <div>
-            <label className="text-sm font-medium">Plan</label>
-            <select
-              name="plan"
-              value={form.plan}
-              onChange={handleChange}
-              className="w-full border rounded px-3 py-2 mt-1"
-            >
-              {Object.entries(PLANS).map(([key, p]) => (
-                <option key={key} value={key}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Choose a plan</label>
+            {(Object.entries(PLAN_INFO) as [keyof typeof PLAN_INFO, typeof PLAN_INFO.full][]).map(
+              ([key, info]) => (
+                <label
+                  key={key}
+                  className={`flex flex-col gap-0.5 border-2 rounded-lg px-3 py-2.5 cursor-pointer ${
+                    form.plan === key ? "border-orange-500 bg-orange-50" : "border-gray-200"
+                  }`}
+                >
+                  <span className="flex items-center gap-2 font-medium text-sm">
+                    <input
+                      type="radio"
+                      name="plan"
+                      value={key}
+                      checked={form.plan === key}
+                      onChange={handleChange}
+                    />
+                    {info.label}
+                  </span>
+                  <span className="text-xs text-gray-500 pl-6">{info.sublabel}</span>
+                </label>
+              )
+            )}
           </div>
 
-<div>
-  <label className="text-sm font-medium">Coupon Code (optional)</label>
-  <input
-    name="couponCode"
-    value={form.couponCode}
-    onChange={handleChange}
-    className="w-full border rounded px-3 py-2 mt-1"
-    placeholder="e.g. TURABINEW101"
-  />
-</div>
+          <div>
+            <label className="text-sm font-medium">Coupon Code (optional)</label>
+            <input
+              name="couponCode"
+              value={form.couponCode}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2 mt-1"
+              placeholder=""
+            />
+          </div>
+
           <button
             type="submit"
             disabled={loading}
             className="w-full bg-orange-500 text-white rounded py-2 font-medium disabled:opacity-50"
           >
-            {loading ? "Processing..." : "Pay & Continue"}
+            {loading ? "Processing..." : `Pay ₹${PLAN_INFO[form.plan].amount} & Continue`}
           </button>
         </form>
       </div>
