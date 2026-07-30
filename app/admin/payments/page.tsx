@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useDashboardAuth } from '@/lib/dashboard-auth';
+import RequirePrimaryOwner from '@/components/admin/RequirePrimaryOwner';
 import {
   getPaymentSettings,
   updatePaymentSettings,
@@ -9,6 +10,14 @@ import {
 } from '@/lib/admin-queries';
 
 export default function PaymentsPage() {
+  return (
+    <RequirePrimaryOwner>
+      <PaymentsPageContent />
+    </RequirePrimaryOwner>
+  );
+}
+
+function PaymentsPageContent() {
   const { staff } = useDashboardAuth();
   const [settings, setSettings] = useState<PaymentSettings | null>(null);
   const [keyId, setKeyId] = useState('');
