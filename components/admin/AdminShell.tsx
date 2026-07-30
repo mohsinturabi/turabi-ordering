@@ -14,7 +14,7 @@ const NAV_ITEMS = [
   { href: '/admin/customers', label: 'Customers' },
   { href: '/admin/staff', label: 'Staff' },
   { href: '/admin/qr', label: 'QR & Link' },
-  { href: '/admin/payments', label: 'Payments' },
+  { href: '/admin/payments', label: 'Payments', primaryOwnerOnly: true },
 ];
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
@@ -23,6 +23,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const [open, setOpen] = useState(false);
 
   const currentLabel = NAV_ITEMS.find((item) => item.href === pathname)?.label ?? 'Admin Panel';
+  const visibleNavItems = NAV_ITEMS.filter(
+    (item) => !item.primaryOwnerOnly || staff?.is_primary_owner
+  );
 
   return (
     <div className="min-h-screen lg:flex">
@@ -76,7 +79,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           </button>
         </div>
         <nav className="flex-1 p-3 flex flex-col gap-1 overflow-y-auto">
-          {NAV_ITEMS.map((item) => {
+          {visibleNavItems.map((item) => {
             const active = pathname === item.href;
             return (
               <Link
