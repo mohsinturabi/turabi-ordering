@@ -1,0 +1,28 @@
+import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+export async function POST(req: Request) {
+  try {
+    const { restaurantId } = await req.json();
+    if (!restaurantId) {
+      return NextResponse.json({ error: "Missing restaurantId" }, { status: 400 });
+    }
+
+    // Sirf tabhi delete karo jab wo abhi bhi 'grace' (unpaid/pending) ho —
+    // taaki koi already-active restaurant galti se delete na ho.
+    await supabaseAdmin
+      .from("restaurants")
+      .delete()
+      .eq("id", restaurantId)
+      .eq("subscription_status", "grace");
+
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
