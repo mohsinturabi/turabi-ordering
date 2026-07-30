@@ -13,9 +13,13 @@ const razorpay = new Razorpay({
   key_secret: process.env.PLATFORM_RAZORPAY_KEY_SECRET!,
 });
 
+// Single plan. "full" = setup + first 28-day cycle in one payment.
+// "trial" = setup fee only, 14-day access, usable once per email/mobile.
+const SETUP_FEE = 399;
+const SUBSCRIPTION_FEE = 599;
 const PLAN_AMOUNTS: Record<string, number> = {
-  basic: 199,
-  assisted: 299,
+  full: SETUP_FEE + SUBSCRIPTION_FEE, // ₹998
+  trial: SETUP_FEE, // ₹399
 };
 
 const STALE_GRACE_MINUTES = 30;
@@ -32,6 +36,22 @@ export async function POST(req: Request) {
     const amount = PLAN_AMOUNTS[plan];
     if (!amount) {
       return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
+    }
+
+    // ---- Trial can only be used once per email or mobile, ever ----
+    if (plan === "trial") {
+      const { data: priorTrial } = await supabaseAdmin
+        .from("trial_usage")
+        .select("id")
+        .or(`email.eq.${email},mobile.eq.${mobile}`)
+        .maybeSingle();
+
+      if (priorTrial) {
+        return NextResponse.json(
+          { error: "Trial ek hi baar milta hai — ye email ya mobile pehle se trial le chuka hai. Full plan (₹998) se signup karo." },
+          { status: 409 }
+        );
+      }
     }
 
     // ---- Subdomain check ----
@@ -74,19 +94,11 @@ export async function POST(req: Request) {
       );
     }
 
-    // ---- Coupon check (sirf Basic plan pe apply hota hai) ----
-
+    // ---- Coupon check (waives the entire payment for this signup) ----
     let couponApplied = false;
     let couponId: string | null = null;
 
     if (couponCode && couponCode.trim()) {
-      if (plan !== "basic") {
-        return NextResponse.json(
-          { error: "Coupon sirf Basic plan pe valid hai" },
-          { status: 400 }
-        );
-      }
-
       const normalizedCode = couponCode.trim().toUpperCase();
 
       const { data: coupon } = await supabaseAdmin
@@ -119,8 +131,13 @@ export async function POST(req: Request) {
     }
 
     // ---- Create restaurant row ----
-    const trialEndsAt = new Date();
-    trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+    const now = new Date();
+    const periodEnd = new Date(now);
+    if (plan === "trial") {
+      periodEnd.setDate(periodEnd.getDate() + 14);
+    } else {
+      periodEnd.setDate(periodEnd.getDate() + 28);
+    }
 
     const { data: restaurant, error: insertError } = await supabaseAdmin
       .from("restaurants")
@@ -131,7 +148,11 @@ export async function POST(req: Request) {
         contact_phone: mobile,
         plan_type: plan,
         subscription_status: couponApplied ? "active" : "grace",
-        trial_ends_at: trialEndsAt.toISOString(),
+        trial_ends_at: plan === "trial" ? periodEnd.toISOString() : null,
+        subscription_start: now.toISOString(),
+        subscription_end: periodEnd.toISOString(),
+        next_billing_date: plan === "trial" ? null : periodEnd.toISOString(),
+        setup_fee_paid: couponApplied,
         counter_qr_token: randomUUID(),
       })
       .select()
@@ -148,6 +169,10 @@ export async function POST(req: Request) {
     if (couponApplied && couponId) {
       await supabaseAdmin.from("coupon_redemptions").insert({ coupon_id: couponId, email });
 
+      if (plan === "trial") {
+        await supabaseAdmin.from("trial_usage").insert({ email, mobile, restaurant_id: restaurant.id });
+      }
+
       const { data: inviteData, error: inviteError } =
         await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
           data: { restaurant_id: restaurant.id, role: "owner" },
@@ -162,9 +187,6 @@ export async function POST(req: Request) {
         });
       }
 
-      // Owner ko turant staff table mein link karo, taaki sign-in hote hi
-      // dashboard access mil jaye. Sirf tab karo jab invite se user mil gaya ho —
-      // warna inviteData null hoga aur yahan crash ho jayega.
       if (inviteData?.user?.id) {
         const { error: staffErr } = await supabaseAdmin.from("staff").insert({
           tenant_id: restaurant.id,
@@ -211,6 +233,7 @@ export async function POST(req: Request) {
       currency: order.currency,
       keyId: process.env.PLATFORM_RAZORPAY_KEY_ID,
       restaurantId: restaurant.id,
+      plan,
     });
   } catch (err: any) {
     console.error("Unexpected error in /api/signup:", err);
