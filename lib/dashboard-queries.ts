@@ -14,7 +14,7 @@ import type {
 export async function getStaffForUser(authUserId: string): Promise<Staff | null> {
   const { data, error } = await supabase
     .from('staff')
-    .select('id, tenant_id, name, role, auth_user_id')
+    .select('id, tenant_id, name, role, auth_user_id, is_primary_owner')
     .eq('auth_user_id', authUserId)
     .maybeSingle();
 
