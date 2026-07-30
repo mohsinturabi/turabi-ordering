@@ -1,91 +1,72 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import Script from "next/script";
-import { createClient } from "@supabase/supabase-js";
+import { useEffect, useState } from 'react';
+import Script from 'next/script';
+import { useDashboardAuth } from '@/lib/dashboard-auth';
+import { supabase } from '@/lib/supabase';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
-const PLANS = {
-  basic: { label: "Basic — ₹199/month", amount: 199 },
-  assisted: { label: "Assisted — ₹299/month", amount: 299 },
-};
+const RENEWAL_FEE = 599;
 
 type Restaurant = {
   id: string;
   name: string;
   contact_email: string;
-  plan_type: keyof typeof PLANS;
-  subscription_status: string;
-  subscription_expires_at: string | null;
+  contact_phone: string;
+  plan_type: string | null;
+  subscription_status: 'active' | 'grace' | 'suspended';
+  subscription_start: string | null;
+  subscription_end: string | null;
+  next_billing_date: string | null;
+};
+
+const STATUS_LABEL: Record<Restaurant['subscription_status'], { text: string; className: string }> = {
+  active: { text: '🟢 Active', className: 'text-green-700 bg-green-50' },
+  grace: { text: '🟡 Grace period', className: 'text-amber-700 bg-amber-50' },
+  suspended: { text: '🔴 Suspended', className: 'text-red-700 bg-red-50' },
 };
 
 export default function BillingPage() {
+  const { staff } = useDashboardAuth();
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<keyof typeof PLANS>("basic");
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
-    async function loadRestaurant() {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData?.user) {
-        setError("Login required");
-        setLoading(false);
-        return;
-      }
+    if (!staff?.tenant_id) return;
+    loadRestaurant(staff.tenant_id);
+  }, [staff?.tenant_id]);
 
-      const { data: staffRow } = await supabase
-        .from("staff")
-        .select("tenant_id")
-        .eq("auth_user_id", userData.user.id)
-        .single();
+  async function loadRestaurant(tenantId: string) {
+    const { data: rest } = await supabase
+      .from('restaurants')
+      .select(
+        'id, name, contact_email, contact_phone, plan_type, subscription_status, subscription_start, subscription_end, next_billing_date'
+      )
+      .eq('id', tenantId)
+      .single();
 
-      if (!staffRow) {
-        setError("Restaurant not found for this account");
-        setLoading(false);
-        return;
-      }
+    if (rest) setRestaurant(rest as Restaurant);
+    setLoading(false);
+  }
 
-      const { data: rest } = await supabase
-        .from("restaurants")
-        .select(
-          "id, name, contact_email, plan_type, subscription_status, subscription_expires_at"
-        )
-        .eq("id", staffRow.tenant_id)
-        .single();
-
-      if (rest) {
-        setRestaurant(rest as Restaurant);
-        setSelectedPlan(rest.plan_type as keyof typeof PLANS);
-      }
-      setLoading(false);
-    }
-
-    loadRestaurant();
-  }, []);
-
-  async function handlePayment(plan: keyof typeof PLANS) {
+  async function handleRenew() {
     if (!restaurant) return;
-    setError("");
-    setMessage("");
+    setError('');
+    setMessage('');
     setProcessing(true);
 
     try {
-      const res = await fetch("/api/platform/create-renewal-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ restaurantId: restaurant.id, plan }),
+      const res = await fetch('/api/platform/create-renewal-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ restaurantId: restaurant.id }),
       });
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Order creation failed");
+        setError(data.error || 'Order creation failed');
         setProcessing(false);
         return;
       }
@@ -94,105 +75,104 @@ export default function BillingPage() {
         key: data.keyId,
         amount: data.amount,
         currency: data.currency,
-        name: "Turabi Labs",
-        description: PLANS[plan].label,
+        name: 'Turabi Labs',
+        description: `Subscription renewal — ₹${RENEWAL_FEE} / 28 days`,
         order_id: data.orderId,
-        prefill: {
-          email: data.email,
-          contact: data.contact,
-        },
+        prefill: { email: data.email, contact: data.contact },
         handler: async function (response: any) {
-          const verifyRes = await fetch("/api/platform/verify-renewal-payment", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+          const verifyRes = await fetch('/api/platform/verify-renewal-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
               restaurantId: restaurant.id,
-              plan,
             }),
           });
           const verifyData = await verifyRes.json();
 
           if (verifyRes.ok) {
-            setMessage("Payment successful! Subscription updated.");
+            setMessage('Payment successful! Subscription renewed for 28 more days.');
             setRestaurant(verifyData.restaurant);
           } else {
-            setError(verifyData.error || "Payment verification failed");
+            setError(verifyData.error || 'Payment verification failed');
           }
           setProcessing(false);
         },
-        modal: {
-          ondismiss: () => setProcessing(false),
-        },
-        theme: { color: "#f97316" },
+        modal: { ondismiss: () => setProcessing(false) },
+        theme: { color: '#f97316' },
       };
 
       // @ts-ignore
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (err: any) {
-      setError(err.message || "Something went wrong");
+      setError(err.message || 'Something went wrong');
       setProcessing(false);
     }
   }
 
-  if (loading) return <div className="p-6">Loading...</div>;
-  if (error && !restaurant) return <div className="p-6 text-red-600">{error}</div>;
+  if (loading) return <p className="text-muted">Loading…</p>;
+  if (error && !restaurant) return <p className="text-accent">{error}</p>;
   if (!restaurant) return null;
 
-  const expiry = restaurant.subscription_expires_at
-    ? new Date(restaurant.subscription_expires_at)
-    : null;
+  const start = restaurant.subscription_start ? new Date(restaurant.subscription_start) : null;
+  const end = restaurant.subscription_end ? new Date(restaurant.subscription_end) : null;
+  const totalDays = restaurant.plan_type === 'trial' ? 14 : 28;
+  const now = new Date();
+  const daysLeft = end ? Math.max(0, Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))) : 0;
+  const daysElapsed = Math.max(0, totalDays - daysLeft);
+  const progressPct = Math.min(100, Math.round((daysElapsed / totalDays) * 100));
+  const status = STATUS_LABEL[restaurant.subscription_status] ?? STATUS_LABEL.suspended;
 
   return (
     <>
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
-      <div className="max-w-xl mx-auto p-6 space-y-6">
-        <h1 className="text-2xl font-bold">Billing</h1>
+      <div className="flex flex-col gap-6 max-w-xl">
+        <h1 className="font-display text-2xl text-ink">Billing</h1>
 
-        {error && (
-          <p className="text-red-600 text-sm bg-red-50 p-2 rounded">{error}</p>
-        )}
-        {message && (
-          <p className="text-green-600 text-sm bg-green-50 p-2 rounded">{message}</p>
-        )}
+        {error && <p className="text-sm text-accent bg-red-50 p-2 rounded-chit">{error}</p>}
+        {message && <p className="text-sm text-green-700 bg-green-50 p-2 rounded-chit">{message}</p>}
 
-        <div className="border rounded-xl p-4 space-y-2">
-          <p>
-            <span className="font-medium">Current Plan:</span>{" "}
-            {PLANS[restaurant.plan_type]?.label || restaurant.plan_type}
-          </p>
-          <p>
-            <span className="font-medium">Status:</span> {restaurant.subscription_status}
-          </p>
-          <p>
-            <span className="font-medium">Expires:</span>{" "}
-            {expiry ? expiry.toLocaleDateString() : "N/A"}
-          </p>
+        <div className="border-2 border-line rounded-chit p-5 flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <span className={`px-3 py-1.5 rounded-full text-sm font-semibold ${status.className}`}>
+              {status.text}
+            </span>
+            <span className="text-sm text-muted">
+              {restaurant.plan_type === 'trial' ? 'Trial plan' : '₹599 / 28 days'}
+            </span>
+          </div>
+
+          {end && (
+            <>
+              <div className="flex justify-between text-sm text-muted">
+                <span>{daysLeft} days left</span>
+                <span>Next billing: {end.toLocaleDateString()}</span>
+              </div>
+              <div className="w-full h-2.5 rounded-full bg-line overflow-hidden">
+                <div
+                  className="h-full bg-ink rounded-full transition-all"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+            </>
+          )}
         </div>
 
-        <div className="border rounded-xl p-4 space-y-4">
-          <h2 className="font-semibold">Renew / Change Plan</h2>
-          <select
-            value={selectedPlan}
-            onChange={(e) => setSelectedPlan(e.target.value as keyof typeof PLANS)}
-            className="w-full border rounded px-3 py-2"
-          >
-            {Object.entries(PLANS).map(([key, p]) => (
-              <option key={key} value={key}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-
+        <div className="border-2 border-line rounded-chit p-5 flex flex-col gap-3">
+          <h2 className="font-display text-lg text-ink">Renew subscription</h2>
+          <p className="text-sm text-muted">
+            ₹{RENEWAL_FEE} extends your access by 28 days from today (or from your current
+            expiry, if you renew early — no days are lost).
+          </p>
           <button
-            onClick={() => handlePayment(selectedPlan)}
+            onClick={handleRenew}
             disabled={processing}
-            className="w-full bg-orange-500 text-white rounded py-2 font-medium disabled:opacity-50"
+            className="bg-ink text-paper rounded-chit py-3 font-semibold disabled:opacity-50"
           >
-            {processing ? "Processing..." : "Pay & Renew"}
+            {processing ? 'Processing…' : `Renew Now · ₹${RENEWAL_FEE}`}
           </button>
         </div>
       </div>
