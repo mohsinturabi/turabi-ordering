@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import crypto from "crypto";
+import Razorpay from "razorpay";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseAdmin = createClient(
@@ -7,46 +7,55 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+const razorpay = new Razorpay({
+  key_id: process.env.PLATFORM_RAZORPAY_KEY_ID!,
+  key_secret: process.env.PLATFORM_RAZORPAY_KEY_SECRET!,
+});
+
+const RENEWAL_FEE = 599; // no setup fee on renewal, always 28 days
+
 export async function POST(req: Request) {
   try {
-    const {
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
-      restaurantId,
-      plan,
-    } = await req.json();
-
-    const body = `${razorpay_order_id}|${razorpay_payment_id}`;
-    const expectedSignature = crypto
-      .createHmac("sha256", process.env.PLATFORM_RAZORPAY_KEY_SECRET!)
-      .update(body)
-      .digest("hex");
-
-    if (expectedSignature !== razorpay_signature) {
-      return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+    const { restaurantId } = await req.json();
+    if (!restaurantId) {
+      return NextResponse.json({ error: "Missing restaurantId" }, { status: 400 });
     }
 
-    const newExpiry = new Date();
-    newExpiry.setMonth(newExpiry.getMonth() + 1);
-
-    const { data: restaurant, error: updateError } = await supabaseAdmin
+    const { data: restaurant, error: fetchErr } = await supabaseAdmin
       .from("restaurants")
-      .update({
-        subscription_status: "active",
-        plan_type: plan,
-        subscription_expires_at: newExpiry.toISOString(),
-      })
+      .select("id, contact_email, contact_phone")
       .eq("id", restaurantId)
-      .select()
       .single();
 
-    if (updateError || !restaurant) {
-      return NextResponse.json({ error: "Could not update subscription" }, { status: 500 });
+    if (fetchErr || !restaurant) {
+      return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, restaurant });
+    let order;
+    try {
+      order = await razorpay.orders.create({
+        amount: RENEWAL_FEE * 100,
+        currency: "INR",
+        receipt: `renew_${Date.now()}`,
+        notes: { restaurantId: restaurant.id, type: "renewal" },
+      });
+    } catch (rzpErr: any) {
+      return NextResponse.json(
+        { error: rzpErr?.error?.description || rzpErr?.message || "Razorpay order creation failed" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      keyId: process.env.PLATFORM_RAZORPAY_KEY_ID,
+      email: restaurant.contact_email,
+      contact: restaurant.contact_phone,
+    });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error("create-renewal-order failed:", err);
+    return NextResponse.json({ error: err.message || "Something went wrong" }, { status: 500 });
   }
 }
