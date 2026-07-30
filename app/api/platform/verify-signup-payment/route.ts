@@ -7,6 +7,8 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+const RENEWAL_FEE = 599;
+
 export async function POST(req: Request) {
   try {
     const {
@@ -34,74 +36,59 @@ export async function POST(req: Request) {
       crypto.timingSafeEqual(expectedBuffer, receivedBuffer);
 
     if (!isValidSignature) {
-      console.error("Signature mismatch for order:", razorpay_order_id);
+      console.error("Signature mismatch for renewal order:", razorpay_order_id);
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
+    // Renewal always extends 28 days from whichever is later — "now" or the
+    // current subscription_end. This means renewing early doesn't lose the
+    // days already paid for; it stacks on top.
+    const { data: current, error: fetchErr } = await supabaseAdmin
+      .from("restaurants")
+      .select("subscription_end")
+      .eq("id", restaurantId)
+      .single();
+
+    if (fetchErr || !current) {
+      return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
+    }
+
+    const now = new Date();
+    const currentEnd = current.subscription_end ? new Date(current.subscription_end) : now;
+    const base = currentEnd > now ? currentEnd : now;
+    const newExpiry = new Date(base);
+    newExpiry.setDate(newExpiry.getDate() + 28);
+
     const { data: restaurant, error: updateError } = await supabaseAdmin
       .from("restaurants")
-      .update({ subscription_status: "active" })
+      .update({
+        subscription_status: "active",
+        plan_type: "full",
+        subscription_end: newExpiry.toISOString(),
+        next_billing_date: newExpiry.toISOString(),
+        last_payment_date: now.toISOString(),
+      })
       .eq("id", restaurantId)
       .select()
       .single();
 
     if (updateError || !restaurant) {
-      console.error("Failed to activate restaurant:", updateError);
-      return NextResponse.json(
-        { error: "Could not activate restaurant" },
-        { status: 500 }
-      );
+      console.error("Failed to update subscription on renewal:", updateError);
+      return NextResponse.json({ error: "Could not update subscription" }, { status: 500 });
     }
 
-    // IMPORTANT: yeh await zaroor karo. Serverless function response bhejte hi
-    // execution kill kar sakta hai, isliye background mein "chhod dena" (fire-and-forget)
-    // se invite/staff-insert kabhi complete hi nahi hote.
-    const inviteWarning = await sendInvite(restaurant);
-
-    return NextResponse.json({
-      success: true,
-      ...(inviteWarning && { warning: inviteWarning }),
+    await supabaseAdmin.from("payment_history").insert({
+      restaurant_id: restaurantId,
+      payment_type: "renewal",
+      amount: RENEWAL_FEE,
+      razorpay_payment_id,
+      razorpay_order_id,
+      status: "paid",
     });
-  } catch (err) {
-    console.error("Unexpected error in verify-signup-payment:", err);
-    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
-  }
-}
 
-async function sendInvite(restaurant: any): Promise<string | null> {
-  try {
-    const { data: inviteData, error: inviteError } =
-      await supabaseAdmin.auth.admin.inviteUserByEmail(restaurant.contact_email, {
-        data: { restaurant_id: restaurant.id, role: "owner" },
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/reset-password`,
-      });
-
-    if (inviteError) {
-      console.error("inviteUserByEmail failed:", inviteError.message);
-      return "Restaurant activated, but invite email failed. Please use resend invite.";
-    }
-
-    if (inviteData?.user?.id) {
-      const { error: staffErr } = await supabaseAdmin.from("staff").insert({
-        tenant_id: restaurant.id,
-        auth_user_id: inviteData.user.id,
-        name: restaurant.name,
-        role: "owner",
-        is_primary_owner: true,
-      });
-
-      if (staffErr) {
-        console.error("staff row creation failed:", staffErr.message);
-        return "Invite sent, but staff record could not be created. Contact support.";
-      }
-    } else {
-      console.error("Skipping staff row creation: invite did not return a user.");
-      return "Invite sent, but staff record could not be created. Contact support.";
-    }
-
-    return null;
-  } catch (err) {
-    console.error("sendInvite failed:", err);
-    return "Restaurant activated, but invite email failed. Please use resend invite.";
+    return NextResponse.json({ success: true, restaurant });
+  } catch (err: any) {
+    console.error("verify-renewal-payment failed:", err);
+    return NextResponse.json({ error: err.message || "Something went wrong" }, { status: 500 });
   }
 }
