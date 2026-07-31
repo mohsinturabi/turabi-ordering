@@ -216,11 +216,17 @@ export default function NewOrderModal({ tenantId, onClose, onCreated }: Props) {
           className="border border-line rounded-chit px-4 py-2.5 text-sm"
         />
 
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <<div className="flex gap-2 overflow-x-auto pb-1">
           {categories.map((cat) => (
             
               key={cat.id}
               href={`#cat-${cat.id}`}
+              className="whitespace-nowrap px-3 py-1.5 rounded-full border border-line text-xs font-medium text-ink"
+            >
+              {cat.name}
+            </a>
+          ))}
+        </div>
               className="whitespace-nowrap px-3 py-1.5 rounded-full border border-line text-xs font-medium text-ink"
             >
               {cat.name}
