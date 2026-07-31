@@ -20,7 +20,7 @@ if (existing?.pdf_url) {
 const { data: order, error: orderErr } = await supabaseAdmin
   .from('orders')
   .select(
-    'id, tenant_id, table_id, order_type, customer_id, order_code, status, payment_method, payment_status, payment_mode, total_amount, created_at'
+    'id, tenant_id, table_id, order_type, customer_id, order_code, status, payment_method, payment_status, payment_mode, subtotal, gst_enabled, gst_percentage, gst_amount, total_amount, created_at'
   )
     .eq('id', orderId)
     .maybeSingle();
@@ -30,7 +30,7 @@ const { data: order, error: orderErr } = await supabaseAdmin
   const [{ data: tenant }, { data: table }, { data: customer }, { data: orderItems }] = await Promise.all([
     supabaseAdmin
       .from('restaurants')
-      .select('id, name, logo_url, subdomain, subscription_status')
+      .select('id, name, logo_url, subdomain, subscription_status, gstin')
       .eq('id', order.tenant_id)
       .maybeSingle(),
     supabaseAdmin
