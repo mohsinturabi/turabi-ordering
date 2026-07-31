@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import {
+ import {
   getTablesWithBookingStatus,
   getCategoriesForTenant,
   getMenuItemsForTenant,
   type TableBookingStatus,
 } from '@/lib/dashboard-queries';
 import { placeOrder } from '@/lib/queries';
+import { supabase } from '@/lib/supabase';
 import type { Category, MenuItem } from '@/lib/types';
 
 interface Props {
@@ -29,7 +30,7 @@ export default function NewOrderModal({ tenantId, onClose, onCreated }: Props) {
   const [customerName, setCustomerName] = useState('');
   const [customerMobile, setCustomerMobile] = useState('');
 
-  useEffect(() => {
+ useEffect(() => {
     async function load() {
       const [t, cats, menuItems] = await Promise.all([
         getTablesWithBookingStatus(tenantId),
@@ -42,7 +43,33 @@ export default function NewOrderModal({ tenantId, onClose, onCreated }: Props) {
       setLoading(false);
     }
     load();
+
+    // Live-refresh table booking status while this modal is open — a new
+    // order (from a customer's own QR scan, or another staff member) should
+    // mark a table "Booked" here instantly, not just after this modal's own
+    // submit.
+    const channel = supabase
+      .channel(`new-order-modal-tables-${tenantId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `tenant_id=eq.${tenantId}`,
+        },
+        async () => {
+          const fresh = await getTablesWithBookingStatus(tenantId);
+          setTables(fresh);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [tenantId]);
+  
 
   function changeQty(itemId: string, delta: number) {
     setCart((prev) => {
