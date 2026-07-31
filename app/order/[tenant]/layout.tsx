@@ -14,6 +14,7 @@ export default async function TenantLayout({
     <CartProvider tenantSlug={tenant}>
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       <div className="min-h-screen max-w-md mx-auto flex flex-col">{children}</div>
+      <PoweredByFooter />
     </CartProvider>
   );
 }
