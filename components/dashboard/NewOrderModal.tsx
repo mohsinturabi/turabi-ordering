@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
- import {
+import {
   getTablesWithBookingStatus,
   getCategoriesForTenant,
   getMenuItemsForTenant,
@@ -29,9 +29,9 @@ export default function NewOrderModal({ tenantId, onClose, onCreated }: Props) {
   const [cart, setCart] = useState<Record<string, number>>({});
   const [customerName, setCustomerName] = useState('');
   const [customerMobile, setCustomerMobile] = useState('');
- const [search, setSearch] = useState('');
+  const [search, setSearch] = useState('');
 
- useEffect(() => {
+  useEffect(() => {
     async function load() {
       const [t, cats, menuItems] = await Promise.all([
         getTablesWithBookingStatus(tenantId),
@@ -70,7 +70,6 @@ export default function NewOrderModal({ tenantId, onClose, onCreated }: Props) {
       supabase.removeChannel(channel);
     };
   }, [tenantId]);
-  
 
   function changeQty(itemId: string, delta: number) {
     setCart((prev) => {
@@ -122,8 +121,6 @@ export default function NewOrderModal({ tenantId, onClose, onCreated }: Props) {
     }
 
     const { error: placeErr } = await placeOrder({
-
-      
       tenantId,
       tableId: target.type === 'table' ? target.tableId : null,
       orderType: target.type === 'table' ? 'table' : 'counter',
@@ -154,118 +151,112 @@ export default function NewOrderModal({ tenantId, onClose, onCreated }: Props) {
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-3 sm:p-4">
       <div className="bg-white rounded-chit w-full max-w-2xl max-h-[90vh] flex flex-col">
-       <div className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col gap-5">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="font-display text-xl sm:text-2xl text-ink">New Order</h2>
-          <button onClick={onClose} className="text-muted text-sm whitespace-nowrap">Close</button>
-        </div>
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col gap-5">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-display text-xl sm:text-2xl text-ink">New Order</h2>
+            <button onClick={onClose} className="text-muted text-sm whitespace-nowrap">Close</button>
+          </div>
 
-        {/* Table / Counter selection */}
-        <div>
-          <p className="font-medium text-ink mb-2">Kahan ke liye?</p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setTarget({ type: 'counter' })}
-              className={`whitespace-nowrap px-4 py-2 rounded-chit border-2 text-sm font-semibold ${
-                target?.type === 'counter' ? 'border-ink bg-ink text-paper' : 'border-line text-ink'
-              }`}
-            >
-              Counter
-            </button>
-            {tables.map((t) => (
+          {/* Table / Counter selection */}
+          <div>
+            <p className="font-medium text-ink mb-2">Kahan ke liye?</p>
+            <div className="flex flex-wrap gap-2">
               <button
-                key={t.id}
-                disabled={t.isBooked}
-                onClick={() => setTarget({ type: 'table', tableId: t.id })}
+                onClick={() => setTarget({ type: 'counter' })}
                 className={`whitespace-nowrap px-4 py-2 rounded-chit border-2 text-sm font-semibold ${
-                  t.isBooked
-                    ? 'border-line text-muted opacity-50 cursor-not-allowed'
-                    : target?.type === 'table' && target.tableId === t.id
-                    ? 'border-ink bg-ink text-paper'
-                    : 'border-line text-ink'
+                  target?.type === 'counter' ? 'border-ink bg-ink text-paper' : 'border-line text-ink'
                 }`}
               >
-                Table {t.table_number} {t.isBooked ? '· Booked' : ''}
+                Counter
               </button>
+              {tables.map((t) => (
+                <button
+                  key={t.id}
+                  disabled={t.isBooked}
+                  onClick={() => setTarget({ type: 'table', tableId: t.id })}
+                  className={`whitespace-nowrap px-4 py-2 rounded-chit border-2 text-sm font-semibold ${
+                    t.isBooked
+                      ? 'border-line text-muted opacity-50 cursor-not-allowed'
+                      : target?.type === 'table' && target.tableId === t.id
+                      ? 'border-ink bg-ink text-paper'
+                      : 'border-line text-ink'
+                  }`}
+                >
+                  Table {t.table_number} {t.isBooked ? '· Booked' : ''}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Customer info (optional) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <input
+              placeholder="Customer name (optional)"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              className="border border-line rounded-chit px-3 py-2 text-sm"
+            />
+            <input
+              placeholder="Mobile number (optional)"
+              value={customerMobile}
+              onChange={(e) => setCustomerMobile(e.target.value)}
+              className="border border-line rounded-chit px-3 py-2 text-sm"
+            />
+          </div>
+
+          {/* Menu */}
+          <input
+            type="text"
+            placeholder="Search menu items…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="border border-line rounded-chit px-4 py-2.5 text-sm"
+          />
+
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {categories.map((cat) => (
+              
+                key={cat.id}
+                href={`#cat-${cat.id}`}
+                className="whitespace-nowrap px-3 py-1.5 rounded-full border border-line text-xs font-medium text-ink"
+              >
+                {cat.name}
+              </a>
             ))}
           </div>
-        </div>
 
-        {/* Customer info (optional) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <input
-            placeholder="Customer name (optional)"
-            value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
-            className="border border-line rounded-chit px-3 py-2 text-sm"
-          />
-          <input
-            placeholder="Mobile number (optional)"
-            value={customerMobile}
-            onChange={(e) => setCustomerMobile(e.target.value)}
-            className="border border-line rounded-chit px-3 py-2 text-sm"
-          />
-        </div>
-
-        {/* Menu */}
-        <input
-          type="text"
-          placeholder="Search menu items…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="border border-line rounded-chit px-4 py-2.5 text-sm"
-        />
-
-        <<div className="flex gap-2 overflow-x-auto pb-1">
-          {categories.map((cat) => (
-            
-              key={cat.id}
-              href={`#cat-${cat.id}`}
-              className="whitespace-nowrap px-3 py-1.5 rounded-full border border-line text-xs font-medium text-ink"
-            >
-              {cat.name}
-            </a>
-          ))}
-        </div>
-              className="whitespace-nowrap px-3 py-1.5 rounded-full border border-line text-xs font-medium text-ink"
-            >
-              {cat.name}
-            </a>
-          ))}
-        </div>
-
-        <div className="flex flex-col gap-4">
-          {categories.map((cat) => {
-            const catItems = items.filter(
-              (i) =>
-                i.category_id === cat.id &&
-                i.name.toLowerCase().includes(search.trim().toLowerCase())
-            );
-            if (catItems.length === 0) return null;
-            return (
-             <div key={cat.id} id={`cat-${cat.id}`} className="scroll-mt-24">
-                <p className="font-medium text-ink mb-2">{cat.name}</p>
-                <div className="flex flex-col gap-2">
-                  {catItems.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between gap-3 border border-line rounded-chit px-3 py-2">
-                      <div className="min-w-0">
-                        <p className="text-sm text-ink truncate">{item.name}</p>
-                        <p className="text-xs text-muted">₹{item.price.toFixed(2)}</p>
+          <div className="flex flex-col gap-4">
+            {categories.map((cat) => {
+              const catItems = items.filter(
+                (i) =>
+                  i.category_id === cat.id &&
+                  i.name.toLowerCase().includes(search.trim().toLowerCase())
+              );
+              if (catItems.length === 0) return null;
+              return (
+                <div key={cat.id} id={`cat-${cat.id}`} className="scroll-mt-24">
+                  <p className="font-medium text-ink mb-2">{cat.name}</p>
+                  <div className="flex flex-col gap-2">
+                    {catItems.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between gap-3 border border-line rounded-chit px-3 py-2">
+                        <div className="min-w-0">
+                          <p className="text-sm text-ink truncate">{item.name}</p>
+                          <p className="text-xs text-muted">₹{item.price.toFixed(2)}</p>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <button onClick={() => changeQty(item.id, -1)} className="w-7 h-7 border border-line rounded-full">−</button>
+                          <span className="w-5 text-center">{cart[item.id] ?? 0}</span>
+                          <button onClick={() => changeQty(item.id, 1)} className="w-7 h-7 border border-line rounded-full">+</button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3 shrink-0">
-                        <button onClick={() => changeQty(item.id, -1)} className="w-7 h-7 border border-line rounded-full">−</button>
-                        <span className="w-5 text-center">{cart[item.id] ?? 0}</span>
-                        <button onClick={() => changeQty(item.id, 1)} className="w-7 h-7 border border-line rounded-full">+</button>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
 
-       {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-red-600">{error}</p>}
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-line p-4 sm:p-6 bg-white">
