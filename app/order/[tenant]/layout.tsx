@@ -13,8 +13,10 @@ export default async function TenantLayout({
   return (
     <CartProvider tenantSlug={tenant}>
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
-      <div className="min-h-screen max-w-md mx-auto flex flex-col">{children}</div>
-      <PoweredByFooter />
+      <div className="min-h-screen max-w-md mx-auto flex flex-col">
+  <div className="flex-1">{children}</div>
+  <PoweredByFooter />
+</div>
     </CartProvider>
   );
 }
