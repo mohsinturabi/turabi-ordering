@@ -101,7 +101,7 @@ export default function SettingsPage() {
 
       <label className="flex flex-col gap-1.5">
         <span className="text-sm font-medium text-ink">Menu Banner</span>
-        <span className="text-xs text-muted">Yeh image customer ke menu page ke top par dikhegi.</span>
+        <span className="text-xs text-muted">This image shows at the top of the customer's menu page.</span>
         {settings.banner_url && (
           <img src={settings.banner_url} alt="Banner" className="w-full h-32 object-cover rounded-chit border border-line" />
         )}
@@ -186,8 +186,8 @@ export default function SettingsPage() {
         <div>
           <h2 className="font-display text-lg text-ink">Kitchen Dashboard</h2>
           <p className="text-sm text-muted">
-            Active: kitchen staff Preparing/Ready khud karte hain, counter sirf Accept + Complete karta hai.
-            Inactive: counter khud poora flow (Accept se Complete tak) handle karta hai, kitchen role bypass ho jata hai.
+            Active: kitchen staff handle Preparing and Ready themselves, counter only does Accept + Complete.
+            Inactive: counter handles the entire flow (Accept to Complete) itself, kitchen role is bypassed.
           </p>
         </div>
         <label className="flex items-center gap-3">
