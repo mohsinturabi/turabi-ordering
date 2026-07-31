@@ -1,5 +1,6 @@
 import Script from 'next/script';
 import { CartProvider } from '@/lib/cart-context';
+import PoweredByFooter from "@/components/PoweredByFooter";
 
 export default async function TenantLayout({
   children,
