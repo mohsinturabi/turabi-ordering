@@ -8,6 +8,7 @@ import { getOrdersForTenant, updateOrderStatus } from '@/lib/dashboard-queries';
 import { getTenantById } from '@/lib/queries';
 import type { DashboardOrder, OrderStatus, PaymentStatus, Tenant } from '@/lib/types';
 import { unlockAudio, playNewOrderChime } from '@/lib/alert-sound';
+import { STATUS_FLOW, STATUS_FLOW_COUNTER_WITH_KITCHEN } from '@/lib/order-status';
 import StatusFilterTabs from './StatusFilterTabs';
 import OrderCard from './OrderCard';
 import NewOrderModal from './NewOrderModal';
@@ -120,11 +121,24 @@ export default function DashboardView() {
     counts[o.status] = (counts[o.status] ?? 0) + 1;
   }
 
-  const trialDaysLeft =
-    tenant?.subscription_status === 'active' && tenant.trial_ends_at
-      ? Math.ceil((new Date(tenant.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-      : null;
-  const showTrialBanner = trialDaysLeft !== null && trialDaysLeft <= 3;
+  const counterFlow = tenant?.kitchen_dashboard_enabled ? STATUS_FLOW_COUNTER_WITH_KITCHEN : STATUS_FLOW;
+  const isSuspended = tenant?.subscription_status === 'suspended';
+
+  async function handleUpdateStatusGuarded(
+    orderId: string,
+    status: OrderStatus,
+    extra?: Partial<{ payment_status: PaymentStatus }>
+  ) {
+    if (isSuspended) return; // subscription suspended — no order actions allowed
+    await handleUpdateStatus(orderId, status, extra);
+  }
+
+  const subscriptionEnd = tenant?.subscription_end ? new Date(tenant.subscription_end) : null;
+  const daysLeft = subscriptionEnd
+    ? Math.ceil((subscriptionEnd.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
+  const showRenewalBanner =
+    tenant && (tenant.subscription_status === 'grace' || (tenant.plan_type === 'trial' && daysLeft !== null && daysLeft <= 3));
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -140,7 +154,8 @@ export default function DashboardView() {
           <button
             type="button"
             onClick={() => setShowNewOrder(true)}
-            className="px-4 py-2.5 rounded-full bg-ink text-paper font-semibold text-sm whitespace-nowrap"
+            disabled={isSuspended}
+            className="px-4 py-2.5 rounded-full bg-ink text-paper font-semibold text-sm whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
           >
             + New Order
           </button>
@@ -177,15 +192,24 @@ export default function DashboardView() {
         </div>
       </header>
 
-      {tenant && tenant.subscription_status !== 'active' && (
-        <div className="px-4 sm:px-6 py-3 bg-red-600 text-white text-center font-semibold text-sm sm:text-base">
-          Aapka subscription suspend ho chuka hai — orders accept nahi ho rahe. Renew karne ke liye platform owner se contact karo.
+      {tenant && daysLeft !== null && (
+        <div className="px-4 sm:px-6 py-1.5 bg-paper border-b border-line text-center text-xs sm:text-sm text-muted">
+          Restaurant Subscription · {Math.max(0, daysLeft)} Days Left · Status{' '}
+          <span className="font-semibold">
+            {tenant.subscription_status === 'active' ? 'Active' : tenant.subscription_status === 'grace' ? 'Grace period' : 'Suspended'}
+          </span>
         </div>
       )}
 
-      {showTrialBanner && (
+      {isSuspended && (
+        <div className="px-4 sm:px-6 py-3 bg-red-600 text-white text-center font-semibold text-sm sm:text-base">
+          Aapka subscription suspend ho chuka hai — orders accept nahi ho rahe. Renew karne ke liye owner se contact karo.
+        </div>
+      )}
+
+      {!isSuspended && showRenewalBanner && (
         <div className="px-4 sm:px-6 py-3 bg-accent text-white text-center font-semibold text-sm sm:text-base">
-          Aapka trial {trialDaysLeft! <= 0 ? 'aaj khatam ho raha hai' : `${trialDaysLeft} din mein khatam ho raha hai`} — renew karna na bhoolein.
+          Aapka subscription {daysLeft !== null && daysLeft <= 0 ? 'aaj khatam ho raha hai' : `${daysLeft} din mein khatam ho raha hai`} — renew karna na bhoolein.
         </div>
       )}
 
@@ -205,7 +229,7 @@ export default function DashboardView() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {visibleOrders.map((order) => (
-              <OrderCard key={order.id} order={order} onUpdateStatus={handleUpdateStatus} />
+              <OrderCard key={order.id} order={order} onUpdateStatus={handleUpdateStatusGuarded} flow={counterFlow} />
             ))}
           </div>
         )}
