@@ -75,6 +75,7 @@ export interface RestaurantSettings {
   id: string;
   name: string;
   logo_url: string | null;
+  banner_url: string | null;
   subdomain: string;
   about_text: string | null;
   contact_phone: string | null;
@@ -85,11 +86,13 @@ export interface RestaurantSettings {
   kitchen_dashboard_enabled: boolean;
 }
 
+
+  
 export async function getRestaurantSettings(tenantId: string): Promise<RestaurantSettings | null> {
   const { data, error } = await supabase
     .from('restaurants')
     .select(
-      'id, name, logo_url, subdomain, about_text, contact_phone, contact_email, gst_enabled, gst_percentage, gstin, kitchen_dashboard_enabled'
+      'id, name, logo_url, banner_url, subdomain, about_text, contact_phone, contact_email, gst_enabled, gst_percentage, gstin, kitchen_dashboard_enabled'
     )
     .eq('id', tenantId)
     .maybeSingle();
@@ -108,6 +111,7 @@ export async function updateRestaurantSettings(
       | 'contact_phone'
       | 'contact_email'
       | 'logo_url'
+      | 'banner_url'
       | 'gst_enabled'
       | 'gst_percentage'
       | 'gstin'
@@ -141,6 +145,21 @@ export async function uploadLogo(tenantId: string, file: File): Promise<{ url: s
   const { data } = supabase.storage.from('logos').getPublicUrl(path);
   return { url: data.publicUrl, error: null };
 }
+
+export async function uploadBanner(tenantId: string, file: File): Promise<{ url: string | null; error: string | null }> {
+  const ext = file.name.split('.').pop();
+  const path = `${tenantId}/banner.${ext}`;
+
+  const { error: uploadErr } = await supabase.storage
+    .from('banners')
+    .upload(path, file, { upsert: true });
+
+  if (uploadErr) return { url: null, error: uploadErr.message };
+
+  const { data } = supabase.storage.from('banners').getPublicUrl(path);
+  return { url: data.publicUrl, error: null };
+}
+
 
 export interface AdminOrderRow {
   id: string;
