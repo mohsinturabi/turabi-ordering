@@ -32,7 +32,7 @@ export async function getOrdersForTenant(tenantId: string): Promise<DashboardOrd
     .select(
       `
   id, tenant_id, table_id, order_type, order_code, status, payment_method, payment_status, payment_mode,
-  total_amount, created_at,
+  subtotal, gst_enabled, gst_percentage, gst_amount, total_amount, created_at,
   tables ( table_number ),
   customers ( mobile_number, name ),
   order_items ( quantity, price_at_order, menu_items ( name ) )
@@ -59,6 +59,10 @@ export async function getOrdersForTenant(tenantId: string): Promise<DashboardOrd
     status: row.status,
     payment_method: row.payment_method,
     payment_status: row.payment_status,
+    subtotal: row.subtotal,
+    gst_enabled: row.gst_enabled,
+    gst_percentage: row.gst_percentage,
+    gst_amount: row.gst_amount,
     total_amount: row.total_amount,
     created_at: row.created_at,
     payment_mode: row.payment_mode ?? null,
