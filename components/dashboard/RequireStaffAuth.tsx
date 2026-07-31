@@ -12,8 +12,12 @@ export default function RequireStaffAuth({ children }: { children: React.ReactNo
     if (loading) return;
     if (!session || unauthorized) {
       router.replace('/dashboard/login');
+      return;
     }
-  }, [loading, session, unauthorized, router]);
+    if (staff?.role === 'kitchen') {
+      router.replace('/dashboard/kitchen');
+    }
+  }, [loading, session, unauthorized, staff, router]);
 
   if (loading) {
     return (
@@ -23,7 +27,7 @@ export default function RequireStaffAuth({ children }: { children: React.ReactNo
     );
   }
 
-  if (!session || !staff) return null;
+  if (!session || !staff || staff.role === 'kitchen') return null;
 
   return <>{children}</>;
 }
