@@ -153,7 +153,7 @@ export default function OrderCard({
 
       {askingPayment && (
         <div className="absolute inset-0 bg-white/97 rounded-chit flex flex-col items-center justify-center gap-4 p-6 z-10">
-          <p className="font-semibold text-ink text-lg text-center">Payment kaise liya?</p>
+          <p className="font-semibold text-ink text-lg text-center">How was the payment received?</p>
           <div className="flex gap-3 w-full">
             <button
               type="button"
