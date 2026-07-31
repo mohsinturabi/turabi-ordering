@@ -29,6 +29,7 @@ export default function NewOrderModal({ tenantId, onClose, onCreated }: Props) {
   const [cart, setCart] = useState<Record<string, number>>({});
   const [customerName, setCustomerName] = useState('');
   const [customerMobile, setCustomerMobile] = useState('');
+ const [search, setSearch] = useState('');
 
  useEffect(() => {
     async function load() {
@@ -206,9 +207,21 @@ export default function NewOrderModal({ tenantId, onClose, onCreated }: Props) {
         </div>
 
         {/* Menu */}
+        <input
+          type="text"
+          placeholder="Search menu items…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="border border-line rounded-chit px-4 py-2.5 text-sm"
+        />
+
         <div className="flex flex-col gap-4">
           {categories.map((cat) => {
-            const catItems = items.filter((i) => i.category_id === cat.id);
+            const catItems = items.filter(
+              (i) =>
+                i.category_id === cat.id &&
+                i.name.toLowerCase().includes(search.trim().toLowerCase())
+            );
             if (catItems.length === 0) return null;
             return (
               <div key={cat.id}>
