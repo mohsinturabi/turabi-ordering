@@ -31,3 +31,10 @@
   background-position: center;
   height: 6px;
 }
+
+
+@keyframes confetti-0 { to { transform: translate(-40px, -50px); opacity: 1; } }
+@keyframes confetti-1 { to { transform: translate(40px, -40px); opacity: 1; } }
+@keyframes confetti-2 { to { transform: translate(-30px, 40px); opacity: 1; } }
+@keyframes confetti-3 { to { transform: translate(35px, 45px); opacity: 1; } }
+@keyframes confetti-4 { to { transform: translate(0px, -55px); opacity: 1; } }
