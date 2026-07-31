@@ -23,13 +23,18 @@ export default function StatusTracker({ status }: { status: OrderStatus }) {
   }
 
   const currentIndex = STEPS.findIndex((s) => s.status === status);
+  const isOrderCompleted = status === 'Completed';
 
   return (
     <ol className="flex flex-col gap-0">
       {STEPS.map((step, i) => {
-        const done = i < currentIndex;
-        const active = i === currentIndex;
+        // The last step, when active, should count as "done" (green tick) —
+        // not just "active" (numbered circle). This is the fix.
+        const isLastStepActive = i === currentIndex && step.status === 'Completed';
+        const done = i < currentIndex || isLastStepActive;
+        const active = i === currentIndex && !isLastStepActive;
         const upcoming = i > currentIndex;
+
         return (
           <li key={step.status} className="flex gap-3">
             <div className="flex flex-col items-center">
@@ -50,14 +55,29 @@ export default function StatusTracker({ status }: { status: OrderStatus }) {
               )}
             </div>
             <div className="pb-6">
-              <p
-                className={[
-                  'font-medium',
-                  active ? 'text-ink' : done ? 'text-ink/70' : 'text-muted',
-                ].join(' ')}
-              >
-                {step.label}
-              </p>
+              <div className="flex items-center gap-1.5">
+                <p
+                  className={[
+                    'font-medium',
+                    active ? 'text-ink' : done ? 'text-ink/70' : 'text-muted',
+                  ].join(' ')}
+                >
+                  {step.label}
+                </p>
+                {/* Dots animate only on the current in-progress step, and
+                    stop automatically once the order reaches Completed. */}
+                {active && !isOrderCompleted && (
+                  <span className="flex gap-0.5">
+                    {[0, 1, 2].map((d) => (
+                      <span
+                        key={d}
+                        className="w-1 h-1 rounded-full bg-accent animate-bounce"
+                        style={{ animationDelay: `${d * 0.15}s` }}
+                      />
+                    ))}
+                  </span>
+                )}
+              </div>
               {active && (
                 <p className="text-sm text-muted mt-0.5">This updates automatically.</p>
               )}
