@@ -128,6 +128,7 @@ export default function AdminStaffPage() {
           className="border border-line rounded-chit px-4 py-2.5 bg-white"
         >
           <option value="staff">Staff (Counter Dashboard only)</option>
+          <option value="kitchen">Kitchen (Kitchen Dashboard only)</option>
           <option value="owner">Owner (full Admin Panel access)</option>
         </select>
         {message && <p className="text-sm text-muted">{message}</p>}
