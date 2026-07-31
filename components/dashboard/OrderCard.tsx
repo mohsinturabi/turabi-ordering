@@ -117,7 +117,7 @@ export default function OrderCard({
         </div>
       </div>
 
-      {(rule.next || rule.canCancel) && (
+      {(rule.next || rule.canCancel || rule.pendingLabel) && (
         <div className="flex flex-wrap gap-3 pt-1">
           {rule.next && (
             <button
@@ -127,6 +127,15 @@ export default function OrderCard({
               className="flex-1 min-w-[140px] whitespace-nowrap bg-ink text-paper rounded-chit py-4 text-lg font-semibold disabled:opacity-50 active:scale-[0.98] transition-transform"
             >
               {busy === rule.next.status ? 'Updating…' : rule.next.label}
+            </button>
+          )}
+          {!rule.next && rule.pendingLabel && (
+            <button
+              type="button"
+              disabled
+              className="flex-1 min-w-[140px] whitespace-nowrap bg-ink/20 text-ink/40 rounded-chit py-4 text-lg font-semibold cursor-not-allowed"
+            >
+              {rule.pendingLabel}
             </button>
           )}
           {rule.canCancel && (
