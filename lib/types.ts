@@ -6,6 +6,7 @@ export interface Tenant {
   id: string;
   name: string;
   logo_url: string | null;
+  banner_url: string | null;
   subdomain: string;
   subscription_status: SubscriptionStatus;
   plan_type: 'basic' | 'assisted' | 'trial' | 'full' | null;
