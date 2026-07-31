@@ -41,6 +41,8 @@ export default function LoginForm() {
 
   if (staffRow?.role === 'owner') {
     router.push('/admin');
+  } else if (staffRow?.role === 'kitchen') {
+    router.push('/dashboard/kitchen');
   } else {
     router.push('/dashboard');
   }
