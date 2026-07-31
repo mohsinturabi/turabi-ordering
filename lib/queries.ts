@@ -146,7 +146,7 @@ export async function placeOrder({
     .maybeSingle();
 
   if (tenant?.subscription_status === 'suspended') {
-    return { order: null, error: 'Ye restaurant abhi orders accept nahi kar raha.' };
+    return { order: null, error: 'This restaurant is not accepting orders right now.' };
   }
 
   // Resolve or create the customer record by mobile number (tenant-scoped).
