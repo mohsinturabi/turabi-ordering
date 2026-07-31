@@ -124,6 +124,16 @@ if (!cancelled) setInvoiceUrl(pdfUrl);
               <span className="font-mono text-muted">{formatPrice(item.price * item.quantity)}</span>
             </div>
           ))}
+          <div className="flex justify-between text-sm">
+            <span className="text-muted">Subtotal</span>
+            <span className="font-mono text-muted">{formatPrice(order.subtotal)}</span>
+          </div>
+          {order.gst_enabled && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted">GST ({order.gst_percentage}%)</span>
+              <span className="font-mono text-muted">{formatPrice(order.gst_amount)}</span>
+            </div>
+          )}
           <div className="flex justify-between border-t border-line pt-2 mt-1">
             <span className="font-medium text-ink">Total</span>
             <span className="font-mono font-medium text-ink">{formatPrice(order.total_amount)}</span>
