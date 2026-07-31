@@ -14,6 +14,7 @@ export interface Tenant {
   kitchen_dashboard_enabled: boolean;
   gst_enabled: boolean;
   gst_percentage: number;
+  gstin?: string | null;
 }
 
 export interface RestaurantTable {
@@ -68,6 +69,10 @@ export interface Order {
   payment_method: PaymentMethod;
   payment_status: PaymentStatus;
   payment_mode: PaymentMode | null;   // ← naya
+  subtotal: number;
+  gst_enabled: boolean;
+  gst_percentage: number;
+  gst_amount: number;
   total_amount: number;
   created_at: string;
   order_type: 'table' | 'counter';
