@@ -12,7 +12,7 @@ import type {
 export async function getTenantBySubdomain(subdomain: string): Promise<Tenant | null> {
   const { data, error } = await supabase
     .from('restaurants')
-   .select('id, name, logo_url, subdomain, subscription_status, plan_type, trial_ends_at, subscription_end, kitchen_dashboard_enabled, gst_enabled, gst_percentage')
+   .select('id, name, logo_url, banner_url, subdomain, subscription_status, plan_type, trial_ends_at, subscription_end, kitchen_dashboard_enabled, gst_enabled, gst_percentage')
     .eq('subdomain', subdomain)
     .maybeSingle();
 
