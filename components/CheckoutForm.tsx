@@ -66,6 +66,9 @@ export default function CheckoutForm({
 }) {
   const router = useRouter();
   const { lines, subtotal, clear } = useCart();
+  const gstPercentage = tenant.gst_enabled ? tenant.gst_percentage : 0;
+  const gstAmount = Math.round(subtotal * (gstPercentage / 100) * 100) / 100;
+  const grandTotal = Math.round((subtotal + gstAmount) * 100) / 100;
   const [method, setMethod] = useState<PaymentMethod>('counter');
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -266,9 +269,21 @@ export default function CheckoutForm({
         ))}
       </div>
 
-      <div className="flex items-center justify-between border-t border-line pt-4">
-        <span className="text-muted">Total</span>
-        <span className="font-mono text-lg text-ink">{formatPrice(subtotal)}</span>
+      <div className="flex flex-col gap-1 border-t border-line pt-4">
+        <div className="flex items-center justify-between text-sm text-muted">
+          <span>Subtotal</span>
+          <span className="font-mono">{formatPrice(subtotal)}</span>
+        </div>
+        {tenant.gst_enabled && (
+          <div className="flex items-center justify-between text-sm text-muted">
+            <span>GST ({tenant.gst_percentage}%)</span>
+            <span className="font-mono">{formatPrice(gstAmount)}</span>
+          </div>
+        )}
+        <div className="flex items-center justify-between pt-1">
+          <span className="text-ink font-medium">Total</span>
+          <span className="font-mono text-lg text-ink">{formatPrice(grandTotal)}</span>
+        </div>
       </div>
 
       {error && <p className="text-sm text-accent">{error}</p>}
@@ -280,7 +295,7 @@ export default function CheckoutForm({
           onClick={handlePlaceOrder}
           className="bg-ink text-paper rounded-chit py-3.5 font-medium disabled:opacity-50 active:scale-[0.99] transition-transform"
         >
-          {placing ? 'Placing order…' : `Place order · ${formatPrice(subtotal)}`}
+          {placing ? 'Placing order…' : `Place order · ${formatPrice(grandTotal)}`}
         </button>
       ) : (
         <div className="flex flex-col gap-3">
