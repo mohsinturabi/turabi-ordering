@@ -95,7 +95,12 @@ export default function InvoiceDocument({
         <View style={styles.headerRow}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             {tenant.logo_url && <Image src={tenant.logo_url} style={styles.logo} />}
-            <Text style={styles.restaurantName}>{tenant.name}</Text>
+            <View>
+              <Text style={styles.restaurantName}>{tenant.name}</Text>
+              {order.gst_enabled && tenant.gstin && (
+                <Text style={[styles.meta, { textAlign: 'left' }]}>GSTIN: {tenant.gstin}</Text>
+              )}
+            </View>
           </View>
           <View>
             <Text style={styles.invoiceLabel}>INVOICE</Text>
@@ -135,8 +140,18 @@ export default function InvoiceDocument({
             </View>
           ))}
 
+          <View style={[styles.row, { marginTop: 8 }]}>
+            <Text style={styles.label}>Subtotal</Text>
+            <Text>₹{order.subtotal.toFixed(2)}</Text>
+          </View>
+          {order.gst_enabled && (
+            <View style={styles.row}>
+              <Text style={styles.label}>GST ({order.gst_percentage}%)</Text>
+              <Text>₹{order.gst_amount.toFixed(2)}</Text>
+            </View>
+          )}
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total</Text>
+            <Text style={styles.totalLabel}>Grand Total</Text>
             <Text style={styles.totalValue}>₹{order.total_amount.toFixed(2)}</Text>
           </View>
         </View>
