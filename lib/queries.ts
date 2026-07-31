@@ -12,7 +12,7 @@ import type {
 export async function getTenantBySubdomain(subdomain: string): Promise<Tenant | null> {
   const { data, error } = await supabase
     .from('restaurants')
-   .select('id, name, logo_url, subdomain, subscription_status, plan_type, trial_ends_at')
+   .select('id, name, logo_url, subdomain, subscription_status, plan_type, trial_ends_at, subscription_end, kitchen_dashboard_enabled, gst_enabled, gst_percentage')
     .eq('subdomain', subdomain)
     .maybeSingle();
 
@@ -136,10 +136,12 @@ export async function placeOrder({
     return { order: null, error: 'Cart is empty.' };
   }
 
-  // Suspended restaurants can't take new orders.
+  // Suspended restaurants can't take new orders. Also pull GST settings —
+  // whatever they are RIGHT NOW gets snapshotted onto this order, so a
+  // later GST setting change never rewrites the tax on past orders.
   const { data: tenant } = await supabase
     .from('restaurants')
-    .select('subscription_status')
+    .select('subscription_status, gst_enabled, gst_percentage')
     .eq('id', tenantId)
     .maybeSingle();
 
@@ -161,7 +163,11 @@ export async function placeOrder({
     return { order: null, error: customerErr?.message ?? 'Could not save customer.' };
   }
 
-  const totalAmount = lines.reduce((sum, l) => sum + l.price * l.quantity, 0);
+  const subtotal = Math.round(lines.reduce((sum, l) => sum + l.price * l.quantity, 0) * 100) / 100;
+  const gstEnabled = tenant?.gst_enabled ?? false;
+  const gstPercentage = gstEnabled ? tenant?.gst_percentage ?? 0 : 0;
+  const gstAmount = Math.round(subtotal * (gstPercentage / 100) * 100) / 100;
+  const totalAmount = Math.round((subtotal + gstAmount) * 100) / 100;
 
   const { data: order, error: orderErr } = await supabase
     .from('orders')
@@ -173,10 +179,14 @@ export async function placeOrder({
       status: 'Pending',
       payment_method: paymentMethod,
       payment_status: 'unpaid',
+      subtotal,
+      gst_enabled: gstEnabled,
+      gst_percentage: gstPercentage,
+      gst_amount: gstAmount,
       total_amount: totalAmount,
     })
 
-    .select('id, tenant_id, table_id, order_code, status, payment_method, payment_status, total_amount, created_at')
+    .select('id, tenant_id, table_id, order_code, status, payment_method, payment_status, subtotal, gst_enabled, gst_percentage, gst_amount, total_amount, created_at')
     .single();
 
   if (orderErr || !order) {
