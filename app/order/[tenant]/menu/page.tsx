@@ -33,6 +33,15 @@ export default async function MenuPage({
   return (
     <RequireMobile tenantSlug={tenantSlug} redirectQuery={tokenQuery}>
       <BrandHeader tenant={tenant} />
+      {tenant.banner_url && (
+        <div className="w-full h-40 relative overflow-hidden">
+          <img
+            src={tenant.banner_url}
+            alt={`${tenant.name} banner`}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
       <MenuBrowser
   tenantId={tenant.id}
   categories={categories}
