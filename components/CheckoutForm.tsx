@@ -145,7 +145,6 @@ export default function CheckoutForm({
       setPlacing(false);
       clear();
       setPlacedOrder(order);
-      setTimeout(() => router.push(`/order/track/${order.order_code}`), 1600);
       return;
     }
     
@@ -198,7 +197,6 @@ export default function CheckoutForm({
             clear();
             setPlacing(false);
             setPlacedOrder(order);
-            setTimeout(() => router.push(`/order/track/${order.order_code}`), 1600);
           } else {
             setPlacing(false);
             setError('Payment could not be verified. You can retry or pay at the counter.');
@@ -236,7 +234,14 @@ export default function CheckoutForm({
   }
 
   if (placedOrder) {
-    return <OrderPlacedAnimation />;
+    return (
+      <OrderPlacedAnimation
+        orderCode={placedOrder.order_code}
+        tableLabel={isCounter ? 'Pickup from Counter' : `Table ${table?.table_number ?? '—'}`}
+        onTrackOrder={() => router.push(`/order/track/${placedOrder.order_code}`)}
+        onBackToMenu={() => router.push(`/order/${tenant.subdomain}/menu`)}
+      />
+    );
   }
 
   return (
