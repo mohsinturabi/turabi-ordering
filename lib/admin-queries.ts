@@ -79,12 +79,18 @@ export interface RestaurantSettings {
   about_text: string | null;
   contact_phone: string | null;
   contact_email: string | null;
+  gst_enabled: boolean;
+  gst_percentage: number;
+  gstin: string | null;
+  kitchen_dashboard_enabled: boolean;
 }
 
 export async function getRestaurantSettings(tenantId: string): Promise<RestaurantSettings | null> {
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, name, logo_url, subdomain, about_text, contact_phone, contact_email')
+    .select(
+      'id, name, logo_url, subdomain, about_text, contact_phone, contact_email, gst_enabled, gst_percentage, gstin, kitchen_dashboard_enabled'
+    )
     .eq('id', tenantId)
     .maybeSingle();
 
@@ -94,7 +100,20 @@ export async function getRestaurantSettings(tenantId: string): Promise<Restauran
 
 export async function updateRestaurantSettings(
   tenantId: string,
-  updates: Partial<Pick<RestaurantSettings, 'name' | 'about_text' | 'contact_phone' | 'contact_email' | 'logo_url'>>
+  updates: Partial<
+    Pick<
+      RestaurantSettings,
+      | 'name'
+      | 'about_text'
+      | 'contact_phone'
+      | 'contact_email'
+      | 'logo_url'
+      | 'gst_enabled'
+      | 'gst_percentage'
+      | 'gstin'
+      | 'kitchen_dashboard_enabled'
+    >
+  >
 ): Promise<{ error: string | null }> {
   const { data, error } = await supabase
     .from('restaurants')
