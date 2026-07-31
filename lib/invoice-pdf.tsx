@@ -1,5 +1,20 @@
-import { Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, Text, View, Image, StyleSheet, Font } from '@react-pdf/renderer';
 import type { Order, Tenant, RestaurantTable } from './types';
+
+// Helvetica (the @react-pdf default) has no ₹ glyph — it falls back to a
+// substitute glyph that overlaps the following digit. Noto Sans covers the
+// Indian Rupee sign properly, so we register it and use it for the whole
+// document instead of the built-in font.
+Font.register({
+  family: 'NotoSans',
+  fonts: [
+    { src: 'https://fonts.gstatic.com/s/notosans/v27/o-0IIpQlx3QUlC5A4PNr5TRASf6M7Q.ttf' },
+    {
+      src: 'https://fonts.gstatic.com/s/notosans/v27/o-0NIpQlx3QUlC5A4PNjXhFVadyB.ttf',
+      fontWeight: 700,
+    },
+  ],
+});
 
 interface InvoiceData {
   order: Order;
@@ -13,7 +28,7 @@ interface InvoiceData {
 }
 
 const styles = StyleSheet.create({
-  page: { padding: 32, fontSize: 10, fontFamily: 'Helvetica' },
+  page: { padding: 32, fontSize: 10, fontFamily: 'NotoSans' },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   logo: { width: 40, height: 40, borderRadius: 4 },
   restaurantName: { fontSize: 16, fontWeight: 700 },
