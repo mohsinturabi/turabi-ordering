@@ -20,6 +20,7 @@ export default function MenuBrowser({
   const [items, setItems] = useState<MenuItem[]>(initialItems);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [search, setSearch] = useState('');
 
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -62,10 +63,24 @@ export default function MenuBrowser({
 
   return (
     <div className="flex-1 flex flex-col pb-24 relative px-5">
+      <div className="sticky top-0 bg-paper z-20 py-3 -mx-5 px-5 border-b border-line">
+        <input
+          type="text"
+          placeholder="Search for dishes…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full border border-line rounded-chit px-4 py-2.5 text-sm bg-white"
+        />
+      </div>
+
       {categories.map((cat) => {
-        const catItems = items.filter((i) => i.category_id === cat.id);
+        const catItems = items.filter(
+          (i) =>
+            i.category_id === cat.id &&
+            i.name.toLowerCase().includes(search.trim().toLowerCase())
+        );
         if (catItems.length === 0) return null;
-        const isCollapsed = collapsed[cat.id];
+        const isCollapsed = search.trim() ? false : collapsed[cat.id];
 
         return (
           <div
