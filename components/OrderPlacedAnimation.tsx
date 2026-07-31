@@ -16,6 +16,14 @@ export default function OrderPlacedAnimation({
   const [show, setShow] = useState(false);
   useEffect(() => setShow(true), []);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onTrackOrder();
+    }, 3000);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-3 relative bg-ink text-paper px-6 py-10">
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
