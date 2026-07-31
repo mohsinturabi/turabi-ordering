@@ -244,7 +244,7 @@ export async function getOrderByCode(orderCode: string): Promise<{
   const { data: order, error } = await supabase
     .from('orders')
     .select(
-      'id, tenant_id, table_id, order_type, order_code, status, payment_method, payment_status, total_amount, created_at'
+      'id, tenant_id, table_id, order_type, order_code, status, payment_method, payment_status, subtotal, gst_enabled, gst_percentage, gst_amount, total_amount, created_at'
     )
     .eq('order_code', orderCode)
     .maybeSingle();
@@ -453,7 +453,7 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
   const { data, error } = await supabase
     .from('orders')
     .select(
-      'id, tenant_id, table_id, order_type, order_code, status, payment_method, payment_status, payment_mode, total_amount, created_at'
+      'id, tenant_id, table_id, order_type, order_code, status, payment_method, payment_status, payment_mode, subtotal, gst_enabled, gst_percentage, gst_amount, total_amount, created_at'
     )
     .eq('id', orderId)
     .maybeSingle();
