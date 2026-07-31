@@ -3,6 +3,10 @@ import type { OrderStatus } from './types';
 interface StatusRule {
   next?: { status: OrderStatus; label: string };
   canCancel: boolean;
+  // For a stage this screen doesn't own (e.g. Counter while Kitchen is
+  // preparing) — the button still SHOWS, just disabled/dimmed, instead of
+  // disappearing, so staff can see the order is "stuck" somewhere on purpose.
+  pendingLabel?: string;
 }
 
 // Default flow — used when the Kitchen Dashboard is OFF. Counter/staff do
@@ -21,8 +25,8 @@ export const STATUS_FLOW: Record<OrderStatus, StatusRule> = {
 // (hands the order over / takes payment). No "Start preparing" step here.
 export const STATUS_FLOW_COUNTER_WITH_KITCHEN: Record<OrderStatus, StatusRule> = {
   Pending: { next: { status: 'Accepted', label: 'Accept' }, canCancel: true },
-  Accepted: { canCancel: true },
-  Preparing: { canCancel: false },
+  Accepted: { canCancel: true, pendingLabel: 'Preparing in kitchen…' },
+  Preparing: { canCancel: false, pendingLabel: 'Preparing in kitchen…' },
   Ready: { next: { status: 'Completed', label: 'Mark completed' }, canCancel: false },
   Completed: { canCancel: false },
   Cancelled: { canCancel: false },
