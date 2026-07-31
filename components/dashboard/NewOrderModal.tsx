@@ -77,7 +77,25 @@ export default function NewOrderModal({ tenantId, onClose, onCreated }: Props) {
     setSubmitting(true);
     setError(null);
 
+    // Re-check the table's live booking status right before placing the
+    // order — the list shown in this modal was fetched when it opened, so
+    // if someone else placed an order on this table in the meantime, this
+    // catches it instead of letting a double-booking through.
+    if (target.type === 'table') {
+      const freshTables = await getTablesWithBookingStatus(tenantId);
+      const freshTarget = freshTables.find((t) => t.id === target.tableId);
+      if (freshTarget?.isBooked) {
+        setTables(freshTables);
+        setTarget(null);
+        setSubmitting(false);
+        setError('Yeh table abhi-abhi book ho gaya — koi doosra table chuno.');
+        return;
+      }
+    }
+
     const { error: placeErr } = await placeOrder({
+
+      
       tenantId,
       tableId: target.type === 'table' ? target.tableId : null,
       orderType: target.type === 'table' ? 'table' : 'counter',
