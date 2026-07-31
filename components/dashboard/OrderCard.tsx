@@ -14,9 +14,12 @@ const STATUS_STYLES: Record<OrderStatus, string> = {
   Cancelled: 'bg-line text-muted',
 };
 
+type StatusFlow = typeof STATUS_FLOW;
+
 export default function OrderCard({
   order,
   onUpdateStatus,
+  flow = STATUS_FLOW,
 }: {
   order: DashboardOrder;
   onUpdateStatus: (
@@ -24,10 +27,15 @@ export default function OrderCard({
     status: OrderStatus,
     extra?: Partial<{ payment_status: PaymentStatus; payment_mode: PaymentMode }>
   ) => Promise<void>;
+  // Which set of next-actions this card should offer — defaults to the
+  // full Counter flow. Pass STATUS_FLOW_COUNTER_WITH_KITCHEN or
+  // STATUS_FLOW_KITCHEN from lib/order-status.ts when the Kitchen
+  // Dashboard is active, so each screen only shows the buttons it owns.
+  flow?: StatusFlow;
 }) {
   const [busy, setBusy] = useState<OrderStatus | null>(null);
   const [askingPayment, setAskingPayment] = useState(false);
-  const rule = STATUS_FLOW[order.status];
+  const rule = flow[order.status];
   const isCounter = order.order_type === 'counter';
 
   // Counter orders that are still unpaid need Cash/UPI picked before Accept goes through.
