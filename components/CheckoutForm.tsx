@@ -7,6 +7,7 @@ import { getMobileNumber, getCustomerName } from '@/lib/storage';
 import { formatPrice } from '@/lib/format';
 import type { Order, PaymentMethod, RestaurantTable, Tenant } from '@/lib/types';
 import { placeOrder, switchOrderToPayAtCounter, getOrderById } from '@/lib/queries';
+import OrderPlacedAnimation from './OrderPlacedAnimation';
 
 declare global {
   interface Window {
@@ -74,6 +75,7 @@ export default function CheckoutForm({
   const [error, setError] = useState<string | null>(null);
   const [pendingOrder, setPendingOrder] = useState<Order | null>(null);
   const [checkingResume, setCheckingResume] = useState(true);
+  const [placedOrder, setPlacedOrder] = useState<Order | null>(null);
 
   const tableId = isCounter ? null : table?.id ?? null;
 
@@ -142,10 +144,11 @@ export default function CheckoutForm({
     if (method === 'counter') {
       setPlacing(false);
       clear();
-      router.push(`/order/track/${order.order_code}`);
+      setPlacedOrder(order);
+      setTimeout(() => router.push(`/order/track/${order.order_code}`), 1600);
       return;
     }
-
+    
     // Online: remember this order so a reload/retry reuses it instead of
     // creating a second one.
     savePendingOrder(tenant.subdomain, tableId, order.id);
@@ -190,14 +193,17 @@ export default function CheckoutForm({
           });
           const verifyData = await verifyRes.json();
 
-          setPlacing(false);
           if (verifyData.success) {
             clearPendingOrder(tenant.subdomain, tableId);
             clear();
-            router.push(`/order/track/${order.order_code}`);
+            setPlacing(false);
+            setPlacedOrder(order);
+            setTimeout(() => router.push(`/order/track/${order.order_code}`), 1600);
           } else {
+            setPlacing(false);
             setError('Payment could not be verified. You can retry or pay at the counter.');
           }
+        
         },
         modal: {
           ondismiss: () => setPlacing(false),
@@ -227,6 +233,10 @@ export default function CheckoutForm({
         <p className="text-muted">Loading…</p>
       </div>
     );
+  }
+
+  if (placedOrder) {
+    return <OrderPlacedAnimation />;
   }
 
   return (
