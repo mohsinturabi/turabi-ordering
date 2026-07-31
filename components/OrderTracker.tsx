@@ -41,7 +41,26 @@ export default function OrderTracker({ orderCode }: { orderCode: string }) {
       if (!cancelled) setItems(orderItems);
 
 const { pdfUrl } = await getInvoiceByOrderId(result.order.id);
-if (!cancelled) setInvoiceUrl(pdfUrl);
+if (!cancelled) {
+  if (pdfUrl) {
+    setInvoiceUrl(pdfUrl);
+  } else if (result.order.payment_status === 'paid') {
+    // Invoice generation on the dashboard side is fire-and-forget — if it
+    // failed silently, retry it here so the customer doesn't stay stuck
+    // on "Invoice not ready yet" forever.
+    try {
+      const res = await fetch('/api/invoices/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: result.order.id }),
+      });
+      const data = await res.json();
+      if (!cancelled && data.url) setInvoiceUrl(data.url);
+    } catch {
+      // still not available — customer can just refresh again
+    }
+  }
+}
 
       // Subscribe only once we know the order's real id.
       const channel = supabase
