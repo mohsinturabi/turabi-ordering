@@ -1,20 +1,40 @@
 import type { OrderStatus } from './types';
 
-// The brief calls out four actions — Accept, Mark Ready, Mark Completed,
-// Cancel — but the schema has a distinct "Preparing" status between
-// Accepted and Ready. Without a way to *enter* Preparing there'd be no
-// path from Accepted to Ready, so "Start Preparing" is added here as the
-// bridge. Everything else matches the brief exactly.
 interface StatusRule {
   next?: { status: OrderStatus; label: string };
   canCancel: boolean;
 }
 
+// Default flow — used when the Kitchen Dashboard is OFF. Counter/staff do
+// everything from Accept through Completed themselves.
 export const STATUS_FLOW: Record<OrderStatus, StatusRule> = {
   Pending: { next: { status: 'Accepted', label: 'Accept' }, canCancel: true },
   Accepted: { next: { status: 'Preparing', label: 'Start preparing' }, canCancel: true },
   Preparing: { next: { status: 'Ready', label: 'Mark ready' }, canCancel: true },
   Ready: { next: { status: 'Completed', label: 'Mark completed' }, canCancel: true },
+  Completed: { canCancel: false },
+  Cancelled: { canCancel: false },
+};
+
+// Counter flow when Kitchen Dashboard is ON — the kitchen staff owns
+// Preparing → Ready, so Counter only Accepts and, once Ready, Completes
+// (hands the order over / takes payment). No "Start preparing" step here.
+export const STATUS_FLOW_COUNTER_WITH_KITCHEN: Record<OrderStatus, StatusRule> = {
+  Pending: { next: { status: 'Accepted', label: 'Accept' }, canCancel: true },
+  Accepted: { canCancel: true },
+  Preparing: { canCancel: false },
+  Ready: { next: { status: 'Completed', label: 'Mark completed' }, canCancel: false },
+  Completed: { canCancel: false },
+  Cancelled: { canCancel: false },
+};
+
+// Kitchen's own flow — they only ever see Accepted/Preparing orders and can
+// move them forward. No Accept, no Cancel, no payment — that's Counter's job.
+export const STATUS_FLOW_KITCHEN: Record<OrderStatus, StatusRule> = {
+  Pending: { canCancel: false },
+  Accepted: { next: { status: 'Preparing', label: 'Start preparing' }, canCancel: false },
+  Preparing: { next: { status: 'Ready', label: 'Mark ready' }, canCancel: false },
+  Ready: { canCancel: false },
   Completed: { canCancel: false },
   Cancelled: { canCancel: false },
 };
