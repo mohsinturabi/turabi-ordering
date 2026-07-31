@@ -1,18 +1,26 @@
 import { Document, Page, Text, View, Image, StyleSheet, Font } from '@react-pdf/renderer';
+import path from 'path';
 import type { Order, Tenant, RestaurantTable } from './types';
 
 // Helvetica (the @react-pdf default) has no ₹ glyph — it falls back to a
 // substitute glyph that overlaps the following digit. Noto Sans covers the
-// Indian Rupee sign properly, so we register it and use it for the whole
-// document instead of the built-in font.
+// Indian Rupee sign properly.
+//
+// IMPORTANT: this is registered from LOCAL files, not a remote URL.
+// A previous version pointed at a Google Fonts CDN URL — Google rotates
+// those hashed URLs over time, so it 404'd in production and broke every
+// invoice. Self-hosting removes that failure mode entirely.
+//
+// Requires these two files to exist in the repo:
+//   lib/fonts/NotoSans-Regular.ttf
+//   lib/fonts/NotoSans-Bold.ttf
+// Download both from https://fonts.google.com/noto/specimen/Noto+Sans
+// ("Get font" → unzip → static/NotoSans-Regular.ttf and static/NotoSans-Bold.ttf).
 Font.register({
   family: 'NotoSans',
   fonts: [
-    { src: 'https://fonts.gstatic.com/s/notosans/v27/o-0IIpQlx3QUlC5A4PNr5TRASf6M7Q.ttf' },
-    {
-      src: 'https://fonts.gstatic.com/s/notosans/v27/o-0NIpQlx3QUlC5A4PNjXhFVadyB.ttf',
-      fontWeight: 700,
-    },
+    { src: path.join(process.cwd(), 'lib', 'fonts', 'NotoSans-Regular.ttf') },
+    { src: path.join(process.cwd(), 'lib', 'fonts', 'NotoSans-Bold.ttf'), fontWeight: 700 },
   ],
 });
 
