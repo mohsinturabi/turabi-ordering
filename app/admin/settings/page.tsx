@@ -140,7 +140,7 @@ export default function SettingsPage() {
       <div className="border-2 border-line rounded-chit p-4 flex flex-col gap-4">
         <div>
           <h2 className="font-display text-lg text-ink">GST Settings</h2>
-          <p className="text-sm text-muted">GST on ya off karo — jab bhi badlo, sirf naye orders pe apply hoga. Purane orders unchanged rahenge.</p>
+          <p className="text-sm text-muted">Turn GST on or off — changes apply only to new orders. Past orders remain unchanged.</p>
         </div>
 
         <label className="flex items-center gap-3">
