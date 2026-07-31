@@ -6,6 +6,7 @@ import {
   getRestaurantSettings,
   updateRestaurantSettings,
   uploadLogo,
+  uploadBanner,
   type RestaurantSettings,
 } from '@/lib/admin-queries';
 
@@ -51,6 +52,20 @@ export default function SettingsPage() {
     setMessage(error ?? 'Logo updated.');
   }
 
+  async function handleBannerChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !settings) return;
+    setSaving(true);
+    const { url, error } = await uploadBanner(settings.id, file);
+    if (url) {
+      await updateRestaurantSettings(settings.id, { banner_url: url });
+      setSettings({ ...settings, banner_url: url });
+    }
+    setSaving(false);
+    setMessage(error ?? 'Banner updated.');
+  }
+  
+
   if (!settings) return <p className="text-muted">Loading…</p>;
 
   return (
@@ -83,6 +98,16 @@ export default function SettingsPage() {
         )}
         <input type="file" accept="image/*" onChange={handleLogoChange} />
       </label>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-sm font-medium text-ink">Menu Banner</span>
+        <span className="text-xs text-muted">Yeh image customer ke menu page ke top par dikhegi.</span>
+        {settings.banner_url && (
+          <img src={settings.banner_url} alt="Banner" className="w-full h-32 object-cover rounded-chit border border-line" />
+        )}
+        <input type="file" accept="image/*" onChange={handleBannerChange} />
+      </label>
+      
 
       <label className="flex flex-col gap-1.5">
         <span className="text-sm font-medium text-ink">About</span>
