@@ -8,8 +8,12 @@ export interface Tenant {
   logo_url: string | null;
   subdomain: string;
   subscription_status: SubscriptionStatus;
-  plan_type: 'basic' | 'assisted' | null;
+  plan_type: 'basic' | 'assisted' | 'trial' | 'full' | null;
   trial_ends_at: string | null;
+  subscription_end: string | null;
+  kitchen_dashboard_enabled: boolean;
+  gst_enabled: boolean;
+  gst_percentage: number;
 }
 
 export interface RestaurantTable {
@@ -80,7 +84,7 @@ export interface Staff {
   id: string;
   tenant_id: string;
   name: string;
-  role: 'owner' | 'staff';
+  role: 'owner' | 'staff' | 'kitchen';
   auth_user_id: string;
   is_primary_owner: boolean;
 }
